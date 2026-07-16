@@ -1,13 +1,11 @@
 from fastapi import APIRouter
 
-from backend.api.v1.endpoints import (
-    auth_router,
-    alerts_router,
-    events_router,
-    rules_router,
-    statistics_router,
-    websockets_router,
-)
+from backend.api.v1.routes.auth import router as auth_router
+from backend.api.v1.routes.alerts import router as alerts_router
+from backend.api.v1.routes.events import router as events_router
+from backend.api.v1.routes.rules import router as rules_router
+from backend.api.v1.routes.statistics import router as statistics_router
+from backend.api.websocket.manager import router as websockets_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, tags=["login"])
