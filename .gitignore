@@ -1,0 +1,32 @@
+# Environments
+.env
+.env.local
+
+# Python
+*.pyc
+__pycache__/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+*.db
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+
+# Logs & Data
+logs/
+*.log
+*.mmdb
+GeoLite2-*.mmdb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
