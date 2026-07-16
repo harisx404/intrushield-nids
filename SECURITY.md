@@ -11,7 +11,7 @@ We only provide security updates for the current major release.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within this NIDS project, please send an e-mail to Muhammad Haris at [your.email@example.com]. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within this NIDS project, please send an e-mail to Muhammad Haris at itsharis.tech@gmail.com. All security vulnerabilities will be promptly addressed.
 
 **Do not open a public issue for security vulnerabilities.**
 

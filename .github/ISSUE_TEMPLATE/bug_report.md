@@ -3,7 +3,7 @@ name: Bug report
 about: Create a report to help us improve the NIDS
 title: '[BUG] '
 labels: bug
-assignees: harisx404
+assignees: Harisx404
 ---
 
 **Describe the bug**
