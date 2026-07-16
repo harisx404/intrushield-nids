@@ -9,6 +9,7 @@ from backend.schemas.statistics import TrafficStatisticsResponse
 router = APIRouter()
 
 @router.get("/current", response_model=TrafficStatisticsResponse)
+@router.get("/summary", response_model=TrafficStatisticsResponse)
 async def read_current_statistics(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
