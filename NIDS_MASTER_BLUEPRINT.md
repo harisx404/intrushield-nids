@@ -4596,6 +4596,19 @@ This project is for a professional portfolio reviewed by human engineers. Code m
 
 ---
 
+### Rule 26 — Frequent, Professional Commits
+After completing every small component, phase, or logical unit of work, it must be committed and pushed to the GitHub repository. The commit history must be pristine, clean, and professional, following the Conventional Commits format, resembling the meticulous work of a senior software engineer.
+
+---
+
+### Rule 27 — Strict Testing and Security Validation
+Before progressing to any subsequent phase, the current phase must be rigorously tested, secured, and checked for any bugs, errors, or vulnerabilities. Any issues must be identified and fixed immediately before the next phase begins.
+
+---
+
+### Rule 28 — No Hardcoded Secrets (Pre-Push Validation)
+Before any code is committed and pushed to GitHub, it must be audited to ensure absolutely no hard-coded secrets, keys, or security vulnerabilities exist. All configuration and keys must be securely loaded from `.env` files.
+
 *End of Master Blueprint — Version 1.0.0*
 
 ---
