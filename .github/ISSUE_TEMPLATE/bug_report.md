@@ -1,9 +1,9 @@
-name: Bug Report
-description: Create a report to help us improve
-title: "[BUG] "
-labels: ["bug"]
-assignees: []
-
+---
+name: Bug report
+about: Create a report to help us improve the NIDS
+title: '[BUG] '
+labels: bug
+assignees: harisx404
 ---
 
 **Describe the bug**
@@ -12,7 +12,7 @@ A clear and concise description of what the bug is.
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
-2. Click on '....'
+2. Trigger alert '....'
 3. Scroll down to '....'
 4. See error
 
@@ -22,7 +22,9 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Environment:**
+**Environment (please complete the following information):**
  - OS: [e.g. Ubuntu 22.04]
+ - Docker Version: [e.g. 24.0.5]
  - Browser [e.g. chrome, safari]
+ - Node/Python version [e.g. Node v20, Python 3.11]
  - Version [e.g. v1.0.0]
