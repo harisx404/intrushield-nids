@@ -32,6 +32,7 @@ services:
       dockerfile: docker/Dockerfile.suricata
     container_name: nids-suricata
     network_mode: "host"
+    privileged: true
     cap_add:
       - NET_ADMIN
       - SYS_NICE

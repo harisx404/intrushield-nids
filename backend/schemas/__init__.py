@@ -4,6 +4,7 @@ from .alert import AlertBase, AlertCreate, AlertUpdate, AlertResponse
 from .event import NetworkEventBase, NetworkEventCreate, NetworkEventResponse
 from .rule import DetectionRuleBase, DetectionRuleCreate, DetectionRuleUpdate, DetectionRuleResponse
 from .statistics import TrafficStatisticsBase, TrafficStatisticsCreate, TrafficStatisticsResponse
+from .audit import AuditLogBase, AuditLogCreate, AuditLogResponse
 
 __all__ = [
     "PaginatedResponse", "ErrorResponse",
@@ -11,5 +12,6 @@ __all__ = [
     "AlertBase", "AlertCreate", "AlertUpdate", "AlertResponse",
     "NetworkEventBase", "NetworkEventCreate", "NetworkEventResponse",
     "DetectionRuleBase", "DetectionRuleCreate", "DetectionRuleUpdate", "DetectionRuleResponse",
-    "TrafficStatisticsBase", "TrafficStatisticsCreate", "TrafficStatisticsResponse"
+    "TrafficStatisticsBase", "TrafficStatisticsCreate", "TrafficStatisticsResponse",
+    "AuditLogBase", "AuditLogCreate", "AuditLogResponse"
 ]

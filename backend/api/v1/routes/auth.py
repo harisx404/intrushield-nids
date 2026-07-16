@@ -21,6 +21,11 @@ async def login_access_token(
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
         
+    # Create audit log
+    from backend.repositories import audit_repo
+    await audit_repo.log_action(db, user_id=user.id, action="login", details="User successfully authenticated")
+    await db.commit()
+        
     return {
         "access_token": create_access_token(user.id),
         "token_type": "bearer",

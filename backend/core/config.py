@@ -1,30 +1,30 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-from typing import Optional
+from typing import Optional, Literal
 
 class Settings(BaseSettings):
-    """System-wide configuration settings loaded from environment variables."""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
-    APP_ENV: str = Field("development", description="Environment: development, staging, or production")
-    PROJECT_NAME: str = "CodeAlpha NIDS API"
-    VERSION: str = "1.0.0"
+    APP_ENV: Literal["development", "production", "testing"] = Field("development")
+    APP_NAME: str = "NIDS-Pro"
+    APP_HOST: str = "0.0.0.0"
+    APP_PORT: int = 8000
+    DEBUG: bool = False
     
-    # Database
-    DATABASE_URL: str = Field(..., description="PostgreSQL or SQLite async connection string")
-    
-    # Security
-    JWT_SECRET_KEY: str = Field(..., description="Secret key for JWT generation")
+    JWT_SECRET_KEY: str = Field(...)
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # Suricata integration
-    EVE_LOG_PATH: str = Field("/var/log/suricata/eve.json", description="Path to Suricata EVE log file")
+    DATABASE_URL: str = Field(...)
     
-    # Threat Intelligence
-    ABUSEIPDB_API_KEY: Optional[str] = None
+    SURICATA_LOG_PATH: str = "/var/log/suricata/eve.json"
+    SURICATA_CONFIG_PATH: str = "/etc/suricata/suricata.yaml"
+    SURICATA_RULES_PATH: str = "/etc/suricata/rules/custom.rules"
+    GEOIP_DB_PATH: Optional[str] = None
+    CORS_ORIGINS: str = "http://localhost:3000"
     
-    # GeoIP
-    GEOIP_DB_PATH: Optional[str] = Field(None, description="Path to MaxMind GeoLite2 City database")
+    RATE_LIMIT_REQUESTS: int = 100
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
 
 settings = Settings()
