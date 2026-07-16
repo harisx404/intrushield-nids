@@ -1,21 +1,26 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { CONSTANTS } from '../lib/constants';
+import { useAlertStore, Alert } from '../stores/alertStore';
 
 export type WebSocketMessage = {
-  event: string;
+  type: string;
   data: any;
 };
 
 export const useWebSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // High-performance buffer to hold incoming messages before flushing
+  const messageBuffer = useRef<Alert[]>([]);
+  const flushIntervalRef = useRef<NodeJS.Timeout>();
+
+  const addAlerts = useAlertStore((state) => state.addAlerts);
 
   const connect = useCallback(() => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      // Depending on backend ws auth approach, token might be query param or subprotocol
       const wsUrl = `${CONSTANTS.WS_URL}?token=${token || ''}`;
       
       const ws = new WebSocket(wsUrl);
@@ -26,8 +31,10 @@ export const useWebSocket = () => {
 
       ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
-          setLastMessage(message);
+          const message: WebSocketMessage = JSON.parse(event.data);
+          if (message.type === "new_alert" && message.data) {
+             messageBuffer.current.push(message.data);
+          }
         } catch (e) {
           console.error("Failed to parse WS message", e);
         }
@@ -50,15 +57,26 @@ export const useWebSocket = () => {
   useEffect(() => {
     connect();
 
+    // Flush buffer every 100ms (debouncing React renders)
+    flushIntervalRef.current = setInterval(() => {
+      if (messageBuffer.current.length > 0) {
+        addAlerts([...messageBuffer.current]);
+        messageBuffer.current = []; // Clear buffer
+      }
+    }, 100);
+
     return () => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (flushIntervalRef.current) {
+        clearInterval(flushIntervalRef.current);
       }
       if (wsRef.current) {
         wsRef.current.close();
       }
     };
-  }, [connect]);
+  }, [connect, addAlerts]);
 
-  return { isConnected, lastMessage };
+  return { isConnected };
 };
