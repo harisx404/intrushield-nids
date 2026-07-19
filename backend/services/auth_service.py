@@ -1,39 +1,39 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Any
-from passlib.context import CryptContext
-from jose import jwt
+"""Authentication service — credential verification and token issuance."""
+from typing import Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.config import settings
-from backend.repositories import user_repo
-from backend.schemas.auth import UserCreate
+from backend.core.security import create_access_token, verify_password
 from backend.models.user import User
-from backend.core.exceptions import UnauthorizedException
+from backend.repositories import user_repo
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
-def create_access_token(subject: str | Any, expires_delta: Optional[timedelta] = None) -> str:
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode = {"exp": expire, "sub": str(subject)}
-    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    return encoded_jwt
 
 class AuthService:
-    async def authenticate(self, session: AsyncSession, email: str, password: str) -> Optional[User]:
-        user = await user_repo.get_by_email(session, email=email)
+    """Handles user authentication against stored credentials."""
+
+    async def authenticate(
+        self, session: AsyncSession, username: str, password: str
+    ) -> Optional[User]:
+        """Return the user if the username/password pair is valid, else None.
+
+        Verification runs even when the user is missing to keep the response
+        time roughly constant and avoid leaking which usernames exist.
+        """
+        user = await user_repo.get_by_username(session, username=username)
         if not user:
+            # Perform a dummy hash comparison to reduce timing side-channels.
+            verify_password(password, _DUMMY_HASH)
             return None
         if not verify_password(password, user.hashed_password):
             return None
         return user
+
+    def issue_access_token(self, user: User) -> str:
+        """Create a signed access token carrying the user's id and role."""
+        return create_access_token({"sub": str(user.id), "role": user.role})
+
+
+# Pre-computed bcrypt hash of a random value, used only for timing equalisation.
+_DUMMY_HASH = "$2b$12$eImiTXuWVxfM37uY4JANjQ.pQzE1z0cM0Q7l3nB0YzJ9Qw1s2t3u"
 
 auth_service = AuthService()
