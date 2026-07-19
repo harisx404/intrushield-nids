@@ -4,6 +4,7 @@ import logging
 
 import httpx
 from backend.core.config import settings
+from backend.core.constants import severity_at_least
 from backend.response.base_handler import BaseResponseHandler, ResponseResult
 from backend.schemas.alert import AlertResponse
 
@@ -22,7 +23,8 @@ class WebhookHandler(BaseResponseHandler):
 
     def should_handle(self, alert: AlertResponse) -> bool:
         return (
-            alert.severity in ("HIGH", "CRITICAL")
+            settings.ENABLE_WEBHOOK_RESPONSE
+            and severity_at_least(alert.severity, settings.WEBHOOK_MIN_SEVERITY)
             and bool(self.webhook_url)
             and self.webhook_url != _PLACEHOLDER_URL
         )

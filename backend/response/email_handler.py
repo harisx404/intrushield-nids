@@ -3,6 +3,7 @@
 import logging
 
 from backend.core.config import settings
+from backend.core.constants import severity_at_least
 from backend.response.base_handler import BaseResponseHandler, ResponseResult
 from backend.schemas.alert import AlertResponse
 
@@ -15,7 +16,9 @@ class EmailHandler(BaseResponseHandler):
         return "EmailHandler"
 
     def should_handle(self, alert: AlertResponse) -> bool:
-        return alert.severity == "CRITICAL" and bool(settings.SMTP_HOST)
+        return settings.ENABLE_EMAIL_RESPONSE and severity_at_least(
+            alert.severity, settings.EMAIL_MIN_SEVERITY
+        )
 
     async def handle(self, alert: AlertResponse) -> ResponseResult:
         # Delivery is stubbed until SMTP credentials are wired up; log the intent

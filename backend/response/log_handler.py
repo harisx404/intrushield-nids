@@ -6,6 +6,7 @@ from pathlib import Path
 
 import aiofiles
 import structlog
+from backend.core.config import settings
 from backend.response.base_handler import BaseResponseHandler, ResponseResult
 from backend.schemas.alert import AlertResponse
 
@@ -19,6 +20,9 @@ class LogHandler(BaseResponseHandler):
     @property
     def name(self) -> str:
         return "LogHandler"
+
+    def should_handle(self, alert: AlertResponse) -> bool:
+        return settings.ENABLE_LOG_RESPONSE
 
     async def handle(self, alert: AlertResponse) -> ResponseResult:
         """Append alert to today's response log file."""

@@ -11,6 +11,29 @@ class Severity(str, Enum):
     CRITICAL = "CRITICAL"
 
 
+# Ordered from least to most severe; used for threshold comparisons.
+SEVERITY_ORDER = [
+    Severity.INFO,
+    Severity.LOW,
+    Severity.MEDIUM,
+    Severity.HIGH,
+    Severity.CRITICAL,
+]
+
+
+def severity_at_least(severity: str, threshold: str) -> bool:
+    """Return True if `severity` ranks at or above `threshold`.
+
+    Unknown severities are treated as the lowest rank so they never satisfy a
+    threshold accidentally.
+    """
+    order = [s.value for s in SEVERITY_ORDER]
+    try:
+        return order.index(severity) >= order.index(threshold)
+    except ValueError:
+        return False
+
+
 class AlertStatus(str, Enum):
     NEW = "NEW"
     INVESTIGATING = "INVESTIGATING"
