@@ -1,26 +1,28 @@
 from typing import Any
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.dependencies import get_db
-from backend.repositories import event_repo
+from backend.core.dependencies import get_db, CurrentUser
+from backend.repositories.event_repository import event_repo
 from backend.schemas.event import NetworkEventResponse
-from backend.schemas.common import PaginatedResponse
+from backend.schemas.common import paginated
 
 router = APIRouter()
 
-@router.get("/", response_model=PaginatedResponse[NetworkEventResponse])
+@router.get("", summary="List all events")
 async def read_events(
+    current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
-    skip: int = 0,
-    limit: int = 50,
-) -> Any:
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
+) -> dict:
     """Retrieve raw network events."""
-    events, total = await event_repo.get_multi(db, skip=skip, limit=limit)
-    return {
-        "items": events,
-        "total": total,
-        "page": (skip // limit) + 1 if limit > 0 else 1,
-        "size": limit,
-        "pages": (total + limit - 1) // limit if limit > 0 else 1
-    }
+    skip = (page - 1) * per_page
+    events, total = await event_repo.get_multi(db, skip=skip, limit=per_page)
+    return paginated(
+        data=[NetworkEventResponse.model_validate(e) for e in events],
+        page=page,
+        per_page=per_page,
+        total=total,
+        message="Events retrieved successfully",
+    )

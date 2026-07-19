@@ -21,3 +21,7 @@ async def global_exception_handler(request: Request, exc: Exception):
             "message": "An unexpected error occurred. Please contact support."
         }
     )
+
+def register_exception_handlers(app):
+    """Register all exception handlers for the FastAPI app."""
+    app.add_exception_handler(Exception, global_exception_handler)
