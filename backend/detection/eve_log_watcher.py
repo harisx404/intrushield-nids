@@ -1,82 +1,121 @@
-import asyncio
-import os
-import logging
-import aiofiles
-from backend.detection.eve_parser import EveParser
-from backend.detection.alert_manager import AlertManager
+"""
+Asyncio-based file tail for Suricata EVE JSON output.
 
-logger = logging.getLogger(__name__)
+Monitors eve.json in real-time, parses each line as a JSON event,
+and forwards to the AlertManager. Handles file-not-found gracefully,
+supports log rotation, and never blocks the asyncio event loop.
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+from collections.abc import Awaitable, Callable
+
+import aiofiles
+import structlog
+from backend.detection.eve_parser import EVEEvent, EVEParser
+
+log = structlog.get_logger(__name__)
+
+# How long to sleep when no new data is available (100ms)
+POLL_INTERVAL_SECONDS: float = 0.1
+# Maximum events to process per read cycle (prevents starvation)
+BATCH_SIZE: int = 50
+# How long to wait for file to appear on startup (Suricata may not be running yet)
+FILE_WAIT_INTERVAL_SECONDS: float = 5.0
+
 
 class EVELogWatcher:
-    def __init__(self, file_path: str, alert_manager: AlertManager, batch_size: int = 100):
-        self.file_path = file_path
-        self.alert_manager = alert_manager
-        self.batch_size = batch_size
-        self.queue = asyncio.Queue()
+    """Watches Suricata's EVE JSON log file and processes new events.
+    
+    Designed to be resilient:
+    - File not existing: waits and retries every 5 seconds
+    - File rotation (Suricata logrotate): detects inode change, reopens
+    - Malformed JSON lines: logs warning and skips, never crashes
+    - Asyncio event loop: all I/O is non-blocking via aiofiles
+    """
+
+    def __init__(
+        self,
+        filepath: str,
+        alert_manager: Callable[[EVEEvent], Awaitable[None]],
+    ) -> None:
+        self._filepath = filepath
+        self._alert_manager = alert_manager
         self._running = False
-        self._tail_task = None
-        self._worker_task = None
+        self._last_inode: int | None = None
 
-    async def _tail_file(self):
-        directory = os.path.dirname(self.file_path)
-        os.makedirs(directory, exist_ok=True)
-        
-        # Wait for file to exist
-        while not os.path.exists(self.file_path) and self._running:
-            await asyncio.sleep(1)
-            
-        if not self._running:
-            return
+    def stop(self) -> None:
+        """Signal the watcher loop to stop gracefully."""
+        self._running = False
 
-        async with aiofiles.open(self.file_path, "r") as f:
-            await f.seek(0, os.SEEK_END)
-            while self._running:
-                line = await f.readline()
-                if not line:
-                    await asyncio.sleep(0.1)
-                    continue
-                    
-                parsed = EveParser.parse_line(line)
-                if parsed:
-                    alert_data = EveParser.extract_alert_data(parsed)
-                    if alert_data:
-                        await self.queue.put(alert_data)
-
-    async def _process_queue(self):
-        while self._running:
-            batch = []
-            try:
-                # Get first item (blocks until available)
-                item = await self.queue.get()
-                batch.append(item)
-                
-                # Try to fill the rest of the batch without blocking
-                while len(batch) < self.batch_size and not self.queue.empty():
-                    batch.append(self.queue.get_nowait())
-                    
-                # Process the batch concurrently but limited by semaphore/batch
-                tasks = [self.alert_manager.process_parsed_alert(alert) for alert in batch]
-                await asyncio.gather(*tasks, return_exceptions=True)
-                
-                for _ in batch:
-                    self.queue.task_done()
-                    
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error processing alert batch: {e}")
-
-    def start(self):
+    async def start(self) -> None:
+        """Begin watching the EVE log file. Runs indefinitely until stop() called."""
         self._running = True
-        loop = asyncio.get_event_loop()
-        self._tail_task = loop.create_task(self._tail_file())
-        self._worker_task = loop.create_task(self._process_queue())
-        logger.info(f"Started asynchronous EVE log watcher on {self.file_path}")
+        log.info("eve_watcher_starting", filepath=self._filepath)
 
-    def stop(self):
-        self._running = False
-        if self._tail_task:
-            self._tail_task.cancel()
-        if self._worker_task:
-            self._worker_task.cancel()
+        while self._running:
+            if not os.path.exists(self._filepath):
+                log.warning(
+                    "eve_log_not_found",
+                    filepath=self._filepath,
+                    message="Waiting for Suricata to create eve.json...",
+                )
+                await asyncio.sleep(FILE_WAIT_INTERVAL_SECONDS)
+                continue
 
+            await self._tail_file()
+
+    async def _tail_file(self) -> None:
+        """Open and tail the EVE log file until rotation or stop signal."""
+        try:
+            current_inode = os.stat(self._filepath).st_ino
+            async with aiofiles.open(self._filepath, mode="r", encoding="utf-8") as f:
+                # On startup: seek to end so we don't replay historical events
+                await f.seek(0, 2)
+                self._last_inode = current_inode
+                log.info("eve_watcher_tailing", filepath=self._filepath)
+
+                while self._running:
+                    lines = await f.readlines()
+                    if lines:
+                        await self._process_batch(lines[:BATCH_SIZE])
+                    else:
+                        # Check for log rotation
+                        try:
+                            new_inode = os.stat(self._filepath).st_ino
+                            if new_inode != self._last_inode:
+                                log.info("eve_log_rotated_detected")
+                                return  # Will reopen from outer loop
+                        except FileNotFoundError:
+                            log.warning("eve_log_disappeared")
+                            return
+                        await asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+        except PermissionError:
+            log.error("eve_log_permission_denied", filepath=self._filepath)
+            await asyncio.sleep(FILE_WAIT_INTERVAL_SECONDS)
+        except Exception as exc:
+            log.exception("eve_watcher_unexpected_error", error=str(exc))
+            await asyncio.sleep(FILE_WAIT_INTERVAL_SECONDS)
+
+    async def _process_batch(self, lines: list[str]) -> None:
+        """Parse and process a batch of EVE JSON lines.
+
+        Only ``alert`` events are forwarded to the alert manager; other event
+        types (dns, http, flow, stats) are parsed but not persisted as alerts.
+        """
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                raw = json.loads(line)
+                event = EVEParser.parse(raw)
+                if event is not None and event.event_type == "alert":
+                    await self._alert_manager(event)
+            except json.JSONDecodeError:
+                log.warning("eve_invalid_json", line_preview=line[:100])
+            except Exception as exc:
+                log.error("eve_processing_error", error=str(exc))

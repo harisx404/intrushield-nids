@@ -1,59 +1,65 @@
-from typing import Dict, Any, Optional
-from datetime import datetime
-from cachetools import TTLCache
+"""Alert manager — enrich, deduplicate, persist, and publish parsed alerts."""
 
+import structlog
+from backend.core.constants import PRIORITY_MAP, Severity
+from backend.core.database import AsyncSessionLocal
 from backend.core.event_bus import event_bus
+from backend.detection.eve_parser import AlertEvent
 from backend.detection.geoip_enricher import GeoIPEnricher
 from backend.detection.threat_intel import ThreatIntel
+from backend.repositories import alert_repo
 from backend.schemas.alert import AlertCreate
-from backend.core.database import async_session_factory
+from cachetools import TTLCache
+
+log = structlog.get_logger(__name__)
+
 
 class AlertManager:
-    def __init__(self, geoip_enricher: GeoIPEnricher, threat_intel: ThreatIntel):
+    """Turns parsed Suricata alert events into persisted, enriched alerts."""
+
+    def __init__(self, geoip_enricher: GeoIPEnricher, threat_intel: ThreatIntel) -> None:
         self.geoip_enricher = geoip_enricher
         self.threat_intel = threat_intel
-        # Keep deduplication keys for 60 seconds, max 10,000 items in memory to prevent leaks
-        self._recent_alerts = TTLCache(maxsize=10000, ttl=60)
+        # Deduplicate identical alerts for 60s; cap at 10k keys to bound memory.
+        self._recent_alerts: TTLCache = TTLCache(maxsize=10000, ttl=60)
 
-    async def process_parsed_alert(self, parsed_alert: Dict[str, Any]) -> None:
-        """Process an alert, enrich it, save to DB, and publish to EventBus."""
-        if not parsed_alert:
-            return
-
-        # Deduplication
-        dedup_key = f"{parsed_alert.get('src_ip')}-{parsed_alert.get('signature_id')}"
+    async def process_parsed_alert(self, event: AlertEvent) -> None:
+        """Enrich a parsed alert, persist it, and publish it to the event bus."""
+        # Deduplicate on (source, signature) to avoid alert storms.
+        dedup_key = f"{event.src_ip}-{event.signature_id}"
         if dedup_key in self._recent_alerts:
-            return  # Skip duplicate
+            return
         self._recent_alerts[dedup_key] = True
 
-        # Enrichment
-        src_country = self.geoip_enricher.lookup_country(parsed_alert.get("src_ip", ""))
-        parsed_alert["src_country"] = src_country
-
-        try:
-            timestamp = datetime.fromisoformat(parsed_alert["timestamp"].replace("Z", "+00:00"))
-        except (ValueError, TypeError, KeyError):
-            timestamp = datetime.now()
+        country = self.geoip_enricher.lookup_country(event.src_ip or "")
 
         alert_create = AlertCreate(
-            timestamp=timestamp,
-            src_ip=parsed_alert.get("src_ip", "Unknown"),
-            src_port=parsed_alert.get("src_port"),
-            dest_ip=parsed_alert.get("dest_ip", "Unknown"),
-            dest_port=parsed_alert.get("dest_port"),
-            protocol=parsed_alert.get("protocol", "UNKNOWN"),
-            signature=parsed_alert.get("signature", "Unknown"),
-            signature_id=parsed_alert.get("signature_id", 0),
-            severity=parsed_alert.get("severity", "INFO"),
-            category=parsed_alert.get("category"),
-            flow_id=parsed_alert.get("flow_id"),
-            src_country=src_country,
-            raw_eve=parsed_alert.get("raw_eve", {})
+            timestamp=event.timestamp,
+            severity=self._map_severity(event.severity),
+            category=event.category or None,
+            signature_id=event.signature_id,
+            signature=event.signature or "Unknown",
+            src_ip=event.src_ip or "Unknown",
+            src_port=event.src_port,
+            dst_ip=event.dst_ip or "Unknown",
+            dst_port=event.dst_port,
+            protocol=event.protocol,
+            flow_id=event.flow_id,
+            geo_country=country,
+            raw_eve=event.raw,
         )
 
-        async with async_session_factory() as session:
-            from backend.repositories import alert_repo
+        async with AsyncSessionLocal() as session:
             db_alert = await alert_repo.create(session, obj_in=alert_create)
-            
-            # Publish to event bus for WebSockets and Response Engine
-            await event_bus.publish("new_alert", {"alert_id": db_alert.id, "alert": parsed_alert})
+
+        # Notify WebSocket subscribers and the response engine.
+        await event_bus.publish(
+            "new_alert",
+            {"alert_id": db_alert.id, "severity": db_alert.severity, "src_ip": db_alert.src_ip},
+        )
+        log.info("alert_processed", alert_id=db_alert.id, severity=db_alert.severity)
+
+    @staticmethod
+    def _map_severity(priority: int) -> str:
+        """Map a Suricata numeric priority (1=highest) to a Severity string."""
+        return PRIORITY_MAP.get(priority, Severity.INFO).value
