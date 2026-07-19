@@ -2,6 +2,7 @@
 
 from typing import Annotated
 
+from backend.core.constants import AlertStatus
 from backend.core.database import get_db
 from backend.core.dependencies import AnalystPlus, CurrentUser
 from backend.schemas.alert import AlertFilter, AlertResponse
@@ -66,7 +67,10 @@ async def acknowledge_alert(
 ) -> dict:
     """Mark an alert as acknowledged by the current analyst."""
     alert = await alert_service.update_status(
-        db, alert_id, status="ACKNOWLEDGED", acknowledged_by=current_user.id
+        db,
+        alert_id,
+        status=AlertStatus.ACKNOWLEDGED.value,
+        acknowledged_by=current_user.id,
     )
     return ok(data=AlertResponse.model_validate(alert), message="Alert acknowledged")
 
@@ -78,5 +82,7 @@ async def resolve_alert(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Mark an alert as resolved."""
-    alert = await alert_service.update_status(db, alert_id, status="RESOLVED")
+    alert = await alert_service.update_status(
+        db, alert_id, status=AlertStatus.RESOLVED.value
+    )
     return ok(data=AlertResponse.model_validate(alert), message="Alert resolved")

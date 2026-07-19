@@ -34,12 +34,14 @@ def severity_at_least(severity: str, threshold: str) -> bool:
         return False
 
 
+# Alert lifecycle statuses. Must stay in sync with the AlertStatus union in
+# frontend/types/alert.ts — these are the exact values the API reads and writes.
 class AlertStatus(str, Enum):
     NEW = "NEW"
-    INVESTIGATING = "INVESTIGATING"
-    MITIGATED = "MITIGATED"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
     RESOLVED = "RESOLVED"
     FALSE_POSITIVE = "FALSE_POSITIVE"
+    ESCALATED = "ESCALATED"
 
 
 class EventType(str, Enum):
