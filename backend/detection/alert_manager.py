@@ -1,6 +1,7 @@
 """Alert manager — enrich, deduplicate, persist, and publish parsed alerts."""
 
 import structlog
+from backend.api.websocket.manager import ws_manager
 from backend.core.constants import PRIORITY_MAP, Severity
 from backend.core.database import AsyncSessionLocal
 from backend.core.event_bus import event_bus
@@ -8,7 +9,7 @@ from backend.detection.eve_parser import AlertEvent
 from backend.detection.geoip_enricher import GeoIPEnricher
 from backend.detection.threat_intel import ThreatIntel
 from backend.repositories import alert_repo
-from backend.schemas.alert import AlertCreate
+from backend.schemas.alert import AlertCreate, AlertResponse
 from cachetools import TTLCache
 
 log = structlog.get_logger(__name__)
@@ -52,11 +53,16 @@ class AlertManager:
         async with AsyncSessionLocal() as session:
             db_alert = await alert_repo.create(session, obj_in=alert_create)
 
-        # Notify WebSocket subscribers and the response engine.
-        await event_bus.publish(
-            "new_alert",
-            {"alert_id": db_alert.id, "severity": db_alert.severity, "src_ip": db_alert.src_ip},
-        )
+        # Serialize once into the same shape the REST API returns, so live feed
+        # rows and fetched rows are identical on the frontend.
+        alert_response = AlertResponse.model_validate(db_alert)
+
+        # Push the full alert to connected WebSocket clients for the live feed.
+        await ws_manager.broadcast_alert(alert_response.model_dump(mode="json"))
+
+        # Notify the response engine (log/webhook/email handlers), which operate
+        # on the AlertResponse object directly.
+        await event_bus.publish("new_alert", alert_response)
         log.info("alert_processed", alert_id=db_alert.id, severity=db_alert.severity)
 
     @staticmethod

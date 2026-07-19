@@ -1,8 +1,9 @@
 import asyncio
 import logging
-from typing import Dict, Any, List
+from typing import List
 from backend.core.event_bus import event_bus
 from backend.response.base_handler import BaseResponseHandler
+from backend.schemas.alert import AlertResponse
 from backend.response.log_handler import LogHandler
 from backend.response.webhook_handler import WebhookHandler
 from backend.response.email_handler import EmailHandler
@@ -22,13 +23,13 @@ class ResponseEngine:
         event_bus.subscribe("new_alert", self.process_alert)
         logger.info("Response Engine started and subscribed to new_alert events.")
 
-    async def process_alert(self, alert_data: Dict[str, Any]) -> None:
+    async def process_alert(self, alert: AlertResponse) -> None:
         """Process an incoming alert through all registered handlers."""
         tasks = []
         for handler in self.handlers:
             try:
-                if await handler.should_handle(alert_data):
-                    tasks.append(asyncio.create_task(handler.handle(alert_data)))
+                if handler.should_handle(alert):
+                    tasks.append(asyncio.create_task(handler.handle(alert)))
             except Exception as e:
                 logger.error(f"Handler {handler.name} failed during should_handle: {e}")
                 

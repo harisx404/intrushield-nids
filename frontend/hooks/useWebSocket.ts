@@ -1,82 +1,100 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { CONSTANTS } from '../lib/constants';
-import { useAlertStore, Alert } from '../stores/alertStore';
+/**
+ * Custom hook for managing a persistent WebSocket connection to the NIDS backend.
+ *
+ * Features:
+ * - Auto-reconnect with exponential backoff (1s → 2s → 4s → 8s → 32s max)
+ * - JWT token injection as query parameter
+ * - Dispatches received alerts to Zustand alertStore automatically
+ * - Cleanup on component unmount
+ *
+ * @returns Connection status and manual send capability
+ */
+"use client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useAlertStore } from "@/stores/alertStore";
+import { getStoredToken } from "@/lib/api";
+import type { WsMessage } from "@/types/api";
 
-export type WebSocketMessage = {
-  type: string;
-  data: any;
-};
+const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000/ws/events";
+const MAX_RECONNECT_DELAY_MS = 32_000;
 
-export const useWebSocket = () => {
+export interface WebSocketHookReturn {
+  isConnected: boolean;
+  sendMessage: (message: object) => void;
+}
+
+export function useWebSocket(): WebSocketHookReturn {
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  
-  // High-performance buffer to hold incoming messages before flushing
-  const messageBuffer = useRef<Alert[]>([]);
-  const flushIntervalRef = useRef<NodeJS.Timeout>();
-
-  const addAlerts = useAlertStore((state) => state.addAlerts);
+  const reconnectDelayRef = useRef(1000);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
+  const addAlerts = useAlertStore((state: any) => state.addAlerts);
 
   const connect = useCallback(() => {
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const wsUrl = `${CONSTANTS.WS_URL}?token=${token || ''}`;
-      
-      const ws = new WebSocket(wsUrl);
+    const token = getStoredToken();
+    if (!token || !isMountedRef.current) return;
 
-      ws.onopen = () => {
-        setIsConnected(true);
-      };
+    const url = `${WS_BASE_URL}?token=${encodeURIComponent(token)}`;
+    const ws = new WebSocket(url);
+    wsRef.current = ws;
 
-      ws.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          if (message.type === "new_alert" && message.data) {
-             messageBuffer.current.push(message.data);
-          }
-        } catch (e) {
-          console.error("Failed to parse WS message", e);
+    ws.onopen = () => {
+      if (!isMountedRef.current) return;
+      setIsConnected(true);
+      reconnectDelayRef.current = 1000; // Reset backoff on successful connect
+    };
+
+    ws.onmessage = (event: MessageEvent) => {
+      if (!isMountedRef.current) return;
+      try {
+        const message: WsMessage = JSON.parse(event.data as string);
+        if (message.type === "new_alert" && message.data) {
+          addAlerts([message.data]);
         }
-      };
+      } catch {
+        // Ignore malformed messages
+      }
+    };
 
-      ws.onclose = () => {
-        setIsConnected(false);
-        // Attempt to reconnect after 3 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
+    ws.onclose = () => {
+      if (!isMountedRef.current) return;
+      setIsConnected(false);
+      wsRef.current = null;
+
+      // Schedule reconnection with exponential backoff
+      reconnectTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          reconnectDelayRef.current = Math.min(
+            reconnectDelayRef.current * 2,
+            MAX_RECONNECT_DELAY_MS
+          );
           connect();
-        }, 3000);
-      };
+        }
+      }, reconnectDelayRef.current);
+    };
 
-      wsRef.current = ws;
-    } catch (e) {
-      console.error("Failed to setup WebSocket", e);
+    ws.onerror = () => {
+      ws.close();
+    };
+  }, [addAlerts]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    connect();
+
+    return () => {
+      isMountedRef.current = false;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      wsRef.current?.close();
+    };
+  }, [connect]);
+
+  const sendMessage = useCallback((message: object) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(message));
     }
   }, []);
 
-  useEffect(() => {
-    connect();
-
-    // Flush buffer every 100ms (debouncing React renders)
-    flushIntervalRef.current = setInterval(() => {
-      if (messageBuffer.current.length > 0) {
-        addAlerts([...messageBuffer.current]);
-        messageBuffer.current = []; // Clear buffer
-      }
-    }, 100);
-
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      if (flushIntervalRef.current) {
-        clearInterval(flushIntervalRef.current);
-      }
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [connect, addAlerts]);
-
-  return { isConnected };
-};
+  return { isConnected, sendMessage };
+}
