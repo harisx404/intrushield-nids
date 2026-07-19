@@ -1,34 +1,61 @@
-import pytest
-from backend.detection.eve_parser import EveParser
+"""Unit tests for the Suricata EVE JSON parser."""
+from datetime import datetime
 
-def test_parse_valid_json():
-    json_str = '{"timestamp": "2023-10-01T12:00:00.000000Z", "event_type": "alert"}'
-    parsed = EveParser.parse_line(json_str)
-    assert parsed is not None
-    assert parsed["event_type"] == "alert"
+from backend.detection.eve_parser import AlertEvent, EVEEvent, EVEParser
 
-def test_parse_invalid_json():
-    json_str = '{"timestamp": "2023-10-01T12:00:00.000000Z", "event_type": "alert"' # Missing brace
-    parsed = EveParser.parse_line(json_str)
-    assert parsed is None
 
-def test_extract_alert_data():
-    eve_event = {
-        "timestamp": "2023-10-01T12:00:00.000000Z",
+def test_parse_alert_event_returns_alert_event():
+    raw = {
+        "timestamp": "2024-01-15T14:23:11.456789+0000",
         "event_type": "alert",
-        "src_ip": "192.168.1.100",
+        "src_ip": "203.0.113.100",
+        "src_port": 49152,
+        "dest_ip": "192.0.2.50",
+        "dest_port": 8080,
+        "proto": "TCP",
+        "flow_id": 1847291847382,
+        "alert": {
+            "signature": "ET EXPLOIT Test Rule",
+            "signature_id": 2030450,
+            "category": "Attempted Administrator Privilege Gain",
+            "severity": 1,
+        },
+    }
+    event = EVEParser.parse(raw)
+
+    assert isinstance(event, AlertEvent)
+    assert event.src_ip == "203.0.113.100"
+    assert event.dst_ip == "192.0.2.50"
+    assert event.protocol == "TCP"
+    assert event.signature == "ET EXPLOIT Test Rule"
+    assert event.signature_id == 2030450
+    assert event.severity == 1
+    assert isinstance(event.timestamp, datetime)
+
+
+def test_parse_non_alert_event_returns_base_event():
+    raw = {
+        "timestamp": "2024-01-15T14:23:11.456789+0000",
+        "event_type": "dns",
+        "src_ip": "10.0.0.5",
         "dest_ip": "8.8.8.8",
         "proto": "UDP",
-        "alert": {
-            "signature": "ET INFO DNS Query to .cc domain",
-            "signature_id": 2023883,
-            "severity": 3,
-            "category": "Potentially Bad Traffic"
-        }
     }
-    alert_data = EveParser.extract_alert_data(eve_event)
-    
-    assert alert_data is not None
-    assert alert_data["src_ip"] == "192.168.1.100"
-    assert alert_data["signature"] == "ET INFO DNS Query to .cc domain"
-    assert alert_data["severity"] == "MEDIUM" # mapped from 3
+    event = EVEParser.parse(raw)
+
+    assert isinstance(event, EVEEvent)
+    assert not isinstance(event, AlertEvent)
+    assert event.event_type == "dns"
+    assert event.dst_ip == "8.8.8.8"
+
+
+def test_parse_malformed_event_never_raises():
+    # Missing fields and a bad timestamp must not crash the parser.
+    event = EVEParser.parse({"event_type": "alert"})
+    assert isinstance(event, AlertEvent)
+    assert event.signature == "Unknown"
+
+
+def test_parse_defaults_timestamp_when_missing():
+    event = EVEParser.parse({"event_type": "flow"})
+    assert isinstance(event.timestamp, datetime)
