@@ -6,12 +6,13 @@ from backend.core.config import settings
 logger = logging.getLogger(__name__)
 
 class EmailHandler(BaseResponseHandler):
-    def __init__(self):
-        super().__init__(name="EmailHandler")
+    @property
+    def name(self) -> str:
+        return "EmailHandler"
 
     async def should_handle(self, alert_data: Dict[str, Any]) -> bool:
         alert_info = alert_data.get('alert', {})
-        return alert_info.get("severity") == "CRITICAL" and bool(settings.SMTP_SERVER)
+        return alert_info.get("severity") == "CRITICAL" and bool(settings.SMTP_HOST)
 
     async def handle(self, alert_data: Dict[str, Any]) -> None:
         alert_info = alert_data.get('alert', {})

@@ -1,16 +1,55 @@
-import logging
-from typing import Dict, Any
-from backend.response.base_handler import BaseResponseHandler
+"""Log response handler — writes alert details to response log file."""
+import json
+from datetime import datetime, timezone
+from pathlib import Path
 
-logger = logging.getLogger("nids.response.log")
+import aiofiles
+import structlog
+
+from backend.response.base_handler import BaseResponseHandler, ResponseResult
+from backend.schemas.alert import AlertResponse
+
+log = structlog.get_logger(__name__)
+LOG_DIR = Path("logs/responses")
+
 
 class LogHandler(BaseResponseHandler):
-    def __init__(self):
-        super().__init__(name="LogHandler")
+    """Writes every alert to a dated response log file in JSON format."""
 
-    async def should_handle(self, alert_data: Dict[str, Any]) -> bool:
-        return True
+    @property
+    def name(self) -> str:
+        return "LogHandler"
 
-    async def handle(self, alert_data: Dict[str, Any]) -> None:
-        alert_info = alert_data.get('alert', {})
-        logger.info(f"INCIDENT LOGGED: Alert ID {alert_data.get('alert_id')} - {alert_info.get('signature')}")
+    async def handle(self, alert: AlertResponse) -> ResponseResult:
+        """Append alert to today's response log file."""
+        try:
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
+            date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            log_file = LOG_DIR / f"response_{date_str}.log"
+
+            entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "alert_id": alert.id,
+                "severity": alert.severity,
+                "signature": alert.signature,
+                "src_ip": alert.src_ip,
+                "dst_ip": alert.dst_ip,
+            }
+
+            async with aiofiles.open(log_file, "a", encoding="utf-8") as f:
+                await f.write(json.dumps(entry) + "\n")
+
+            return ResponseResult(
+                handler_name=self.name,
+                action="logged_to_file",
+                status="SUCCESS",
+                details={"file": str(log_file)},
+            )
+        except Exception as exc:
+            log.error("log_handler_failed", error=str(exc))
+            return ResponseResult(
+                handler_name=self.name,
+                action="logged_to_file",
+                status="FAILED",
+                details={"error": str(exc)},
+            )

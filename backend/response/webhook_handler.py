@@ -7,9 +7,12 @@ from backend.core.config import settings
 logger = logging.getLogger(__name__)
 
 class WebhookHandler(BaseResponseHandler):
+    @property
+    def name(self) -> str:
+        return "WebhookHandler"
+
     def __init__(self):
-        super().__init__(name="WebhookHandler")
-        self.webhook_url = settings.SLACK_WEBHOOK_URL
+        self.webhook_url = settings.WEBHOOK_URL
 
     async def should_handle(self, alert_data: Dict[str, Any]) -> bool:
         alert_info = alert_data.get('alert', {})
