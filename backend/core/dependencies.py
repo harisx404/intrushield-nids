@@ -1,13 +1,14 @@
 """FastAPI dependency injection factories."""
+
 from typing import Annotated
-from fastapi import Depends, HTTPException, Query, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from backend.core.database import get_db
-from backend.core.security import verify_token
 from backend.core.exceptions import UnauthorizedException
+from backend.core.security import verify_token
 from backend.repositories import user_repo
 from backend.schemas.auth import UserResponse
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 _bearer = HTTPBearer(auto_error=False)
@@ -18,7 +19,7 @@ async def get_current_user(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserResponse:
     """Extract and validate the current authenticated user from JWT.
-    
+
     Raises:
         HTTPException 401: If no token or token is invalid.
         HTTPException 401: If user no longer exists in database.
@@ -50,10 +51,11 @@ async def get_current_user(
 
 def require_role(*roles: str):
     """Factory for role-based access control dependency.
-    
+
     Usage:
         @router.delete("/alerts/{id}", dependencies=[Depends(require_role("admin"))])
     """
+
     async def _check_role(
         current_user: Annotated[UserResponse, Depends(get_current_user)]
     ) -> UserResponse:
@@ -63,6 +65,7 @@ def require_role(*roles: str):
                 detail=f"Required role: {', '.join(roles)}. Your role: {current_user.role}",
             )
         return current_user
+
     return _check_role
 
 

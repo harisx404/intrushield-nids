@@ -1,19 +1,18 @@
 """Repository for alert persistence and querying."""
-from datetime import datetime
-from typing import List, Optional
 
-from sqlalchemy import desc, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
 
 from backend.models.alert import Alert
 from backend.repositories.base import BaseRepository
 from backend.schemas.alert import AlertCreate, AlertFilter, AlertUpdate
+from sqlalchemy import desc, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AlertRepository(BaseRepository[Alert, AlertCreate, AlertUpdate]):
     async def get_recent_alerts(
-        self, session: AsyncSession, *, limit: int = 50, severity: Optional[str] = None
-    ) -> List[Alert]:
+        self, session: AsyncSession, *, limit: int = 50, severity: str | None = None
+    ) -> list[Alert]:
         query = select(self.model).order_by(desc(self.model.timestamp))
         if severity:
             query = query.filter(self.model.severity == severity)
@@ -28,7 +27,7 @@ class AlertRepository(BaseRepository[Alert, AlertCreate, AlertUpdate]):
         filters: AlertFilter,
         page: int = 1,
         per_page: int = 20,
-    ) -> tuple[List[Alert], int]:
+    ) -> tuple[list[Alert], int]:
         """Return a page of alerts matching the filters, plus the total count."""
         conditions = self._build_conditions(filters)
 

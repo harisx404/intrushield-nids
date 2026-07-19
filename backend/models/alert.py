@@ -1,14 +1,22 @@
 """Alert ORM model — primary security event record."""
+
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
-from sqlalchemy import (
-    Boolean, DateTime, Float, ForeignKey, Index,
-    Integer, JSON, String, Text, func,
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from typing import TYPE_CHECKING
 
 from backend.core.database import Base
 from backend.models.base import TimestampMixin
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from backend.models.user import User
@@ -24,32 +32,34 @@ class Alert(Base, TimestampMixin):
         DateTime(timezone=True), nullable=False, index=True
     )
     severity: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="NEW", index=True)
-    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
-    signature_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="NEW", index=True
+    )
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    signature_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     signature: Mapped[str] = mapped_column(String(512), nullable=False)
     src_ip: Mapped[str] = mapped_column(String(45), nullable=False, index=True)
-    src_port: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    src_port: Mapped[int | None] = mapped_column(Integer, nullable=True)
     dst_ip: Mapped[str] = mapped_column(String(45), nullable=False)
-    dst_port: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
-    protocol: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, index=True)
-    flow_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
-    geo_country: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    geo_city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    geo_lat: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    geo_lon: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    geo_org: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    raw_eve: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    dst_port: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    protocol: Mapped[str | None] = mapped_column(String(10), nullable=True, index=True)
+    flow_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    geo_country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    geo_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    geo_lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    geo_lon: Mapped[float | None] = mapped_column(Float, nullable=True)
+    geo_org: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    raw_eve: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
-    acknowledged_by: Mapped[Optional[int]] = mapped_column(
+    acknowledged_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    acknowledged_at: Mapped[Optional[DateTime]] = mapped_column(
+    acknowledged_at: Mapped[DateTime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
     # Relationships
-    acknowledged_by_user: Mapped[Optional["User"]] = relationship(
+    acknowledged_by_user: Mapped[User | None] = relationship(
         "User", foreign_keys=[acknowledged_by], lazy="selectin"
     )
 

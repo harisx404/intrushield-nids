@@ -1,7 +1,10 @@
 import logging
 import sys
+
 import structlog
+
 from .config import settings
+
 
 def setup_logging() -> None:
     """Configure structured logging for the application."""
@@ -18,7 +21,11 @@ def setup_logging() -> None:
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,
             structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.JSONRenderer() if settings.APP_ENV == "production" else structlog.dev.ConsoleRenderer()
+            (
+                structlog.processors.JSONRenderer()
+                if settings.APP_ENV == "production"
+                else structlog.dev.ConsoleRenderer()
+            ),
         ],
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
@@ -29,5 +36,6 @@ def setup_logging() -> None:
     # Disable noisy third-party loggers
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("watchdog").setLevel(logging.WARNING)
+
 
 log = structlog.get_logger("nids")

@@ -1,12 +1,12 @@
-from .base import Base, TimestampMixin
 from .alert import Alert
+from .audit_log import AuditLog
+from .base import Base, TimestampMixin
+from .blocked_ip import BlockedIP
 from .event import NetworkEvent
-from .rule import DetectionRule
 from .response_log import ResponseLog
+from .rule import DetectionRule
 from .statistics import TrafficStatistics
 from .user import User
-from .audit_log import AuditLog
-from .blocked_ip import BlockedIP
 
 __all__ = [
     "Base",

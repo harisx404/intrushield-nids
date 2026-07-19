@@ -1,5 +1,7 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
 
 class TrafficStatisticsBase(BaseModel):
     timestamp: datetime
@@ -11,8 +13,10 @@ class TrafficStatisticsBase(BaseModel):
     packets_in: int = 0
     packets_out: int = 0
 
+
 class TrafficStatisticsCreate(TrafficStatisticsBase):
     pass
+
 
 class TrafficStatisticsResponse(TrafficStatisticsBase):
     id: int

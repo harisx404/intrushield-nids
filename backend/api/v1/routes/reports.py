@@ -1,8 +1,9 @@
-from fastapi import APIRouter
 from backend.core.dependencies import CurrentUser
 from backend.schemas.common import ok
+from fastapi import APIRouter
 
 router = APIRouter()
+
 
 @router.get("", summary="Get reports")
 async def get_reports(current_user: CurrentUser) -> dict:

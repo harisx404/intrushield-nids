@@ -1,5 +1,7 @@
 """System-wide constants."""
+
 from enum import Enum
+
 
 class Severity(str, Enum):
     INFO = "INFO"
@@ -8,12 +10,14 @@ class Severity(str, Enum):
     HIGH = "HIGH"
     CRITICAL = "CRITICAL"
 
+
 class AlertStatus(str, Enum):
     NEW = "NEW"
     INVESTIGATING = "INVESTIGATING"
     MITIGATED = "MITIGATED"
     RESOLVED = "RESOLVED"
     FALSE_POSITIVE = "FALSE_POSITIVE"
+
 
 class EventType(str, Enum):
     ALERT = "alert"
@@ -22,6 +26,7 @@ class EventType(str, Enum):
     TLS = "tls"
     FLOW = "flow"
     STATS = "stats"
+
 
 # Map Suricata priority to our Severity enum
 PRIORITY_MAP = {

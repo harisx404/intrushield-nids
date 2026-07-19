@@ -1,4 +1,8 @@
 """SQLAlchemy async database engine and session management."""
+
+import os
+
+from backend.core.config import settings
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -6,20 +10,18 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
-from backend.core.config import settings
-import os
-
 
 class Base(DeclarativeBase):
     """Declarative base for all ORM models."""
+
     pass
 
 
 # Engine — SQLite uses aiosqlite, PostgreSQL uses asyncpg
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,          # SQL logging only in debug mode
-    pool_pre_ping=True,           # Check connections before use
+    echo=settings.DEBUG,  # SQL logging only in debug mode
+    pool_pre_ping=True,  # Check connections before use
     # SQLite-specific: connect_args not needed for aiosqlite
     # PostgreSQL: add pool_size=10, max_overflow=20
 )
@@ -27,7 +29,7 @@ engine = create_async_engine(
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
-    expire_on_commit=False,       # Prevent lazy load errors after commit
+    expire_on_commit=False,  # Prevent lazy load errors after commit
     autocommit=False,
     autoflush=False,
 )
@@ -35,7 +37,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 async def create_tables() -> None:
     """Create all tables on startup (development only).
-    
+
     In production, use Alembic migrations instead.
     This is a safety net for development environments.
     """

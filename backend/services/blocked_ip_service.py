@@ -1,13 +1,13 @@
 """Service layer for firewall-style IP blocks and their expiry lifecycle."""
+
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.core.database import AsyncSessionLocal
 from backend.models.blocked_ip import BlockedIP
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger(__name__)
 
@@ -19,7 +19,7 @@ class BlockedIPService:
         Blocks with a NULL ``expires_at`` are permanent and never touched.
         Returns the number of rows deactivated.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = await session.execute(
             update(BlockedIP)
             .where(

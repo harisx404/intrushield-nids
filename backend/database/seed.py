@@ -3,29 +3,51 @@
 Idempotent: running it repeatedly will not create duplicate users or pile up
 extra alerts. Intended for local development and demos only.
 """
+
 import asyncio
 import random
-from datetime import datetime, timedelta, timezone
-
-from sqlalchemy import func, select
+from datetime import UTC, datetime, timedelta
 
 from backend.core.constants import AlertStatus, Severity
 from backend.core.database import AsyncSessionLocal
 from backend.core.security import get_password_hash
 from backend.models import Alert, User
+from sqlalchemy import func, select
 
 DEFAULT_ADMIN_USERNAME = "admin"
 DEFAULT_ADMIN_EMAIL = "admin@nids.local"
-DEFAULT_ADMIN_PASSWORD = "changeme123"  # noqa: S105 - dev-only default, documented in README
+DEFAULT_ADMIN_PASSWORD = (
+    "changeme123"  # noqa: S105 - dev-only default, documented in README
+)
 SAMPLE_ALERT_COUNT = 50
 
 _SIGNATURES = [
     ("ET SCAN Potential SSH Scan OUTBOUND", "Attempted Information Leak", Severity.LOW),
-    ("ET MALWARE Cobalt Strike Beacon Observed", "A Network Trojan was Detected", Severity.CRITICAL),
-    ("ET EXPLOIT Possible SQL Injection Attempt", "Web Application Attack", Severity.HIGH),
-    ("ET POLICY DNS Query to .onion Domain", "Potentially Bad Traffic", Severity.MEDIUM),
-    ("ET INFO Observed DNS Query to Public Resolver", "Not Suspicious Traffic", Severity.INFO),
-    ("ET DOS Possible NTP Amplification Attack", "Attempted Denial of Service", Severity.HIGH),
+    (
+        "ET MALWARE Cobalt Strike Beacon Observed",
+        "A Network Trojan was Detected",
+        Severity.CRITICAL,
+    ),
+    (
+        "ET EXPLOIT Possible SQL Injection Attempt",
+        "Web Application Attack",
+        Severity.HIGH,
+    ),
+    (
+        "ET POLICY DNS Query to .onion Domain",
+        "Potentially Bad Traffic",
+        Severity.MEDIUM,
+    ),
+    (
+        "ET INFO Observed DNS Query to Public Resolver",
+        "Not Suspicious Traffic",
+        Severity.INFO,
+    ),
+    (
+        "ET DOS Possible NTP Amplification Attack",
+        "Attempted Denial of Service",
+        Severity.HIGH,
+    ),
 ]
 _PROTOCOLS = ["TCP", "UDP", "ICMP"]
 
@@ -49,7 +71,9 @@ async def _seed_admin(session) -> None:
         )
     )
     await session.commit()
-    print(f"Admin user created — username: {DEFAULT_ADMIN_USERNAME} / password: {DEFAULT_ADMIN_PASSWORD}")
+    print(
+        f"Admin user created — username: {DEFAULT_ADMIN_USERNAME} / password: {DEFAULT_ADMIN_PASSWORD}"
+    )
 
 
 async def _seed_alerts(session) -> None:
@@ -59,7 +83,7 @@ async def _seed_alerts(session) -> None:
         print(f"Alerts table already has {existing_count} rows — skipping sample data.")
         return
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     rng = random.Random(42)  # deterministic sample data across runs
     alerts = []
     for i in range(SAMPLE_ALERT_COUNT):

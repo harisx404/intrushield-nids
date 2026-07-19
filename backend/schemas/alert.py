@@ -1,6 +1,7 @@
 """Pydantic schemas for alert data — mirror backend/models/alert.py and frontend/types/alert.ts."""
+
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -9,55 +10,55 @@ class AlertBase(BaseModel):
     timestamp: datetime
     severity: str
     status: str = "NEW"
-    category: Optional[str] = None
-    signature_id: Optional[int] = None
+    category: str | None = None
+    signature_id: int | None = None
     signature: str
     src_ip: str
-    src_port: Optional[int] = None
+    src_port: int | None = None
     dst_ip: str
-    dst_port: Optional[int] = None
-    protocol: Optional[str] = None
-    flow_id: Optional[str] = None
+    dst_port: int | None = None
+    protocol: str | None = None
+    flow_id: str | None = None
 
 
 class AlertCreate(AlertBase):
-    geo_country: Optional[str] = None
-    geo_city: Optional[str] = None
-    geo_lat: Optional[float] = None
-    geo_lon: Optional[float] = None
-    geo_org: Optional[str] = None
-    raw_eve: Dict[str, Any] = Field(default_factory=dict)
+    geo_country: str | None = None
+    geo_city: str | None = None
+    geo_lat: float | None = None
+    geo_lon: float | None = None
+    geo_org: str | None = None
+    raw_eve: dict[str, Any] = Field(default_factory=dict)
 
 
 class AlertFilter(BaseModel):
-    severity: Optional[str] = None
-    status: Optional[str] = None
-    src_ip: Optional[str] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    severity: str | None = None
+    status: str | None = None
+    src_ip: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
 
 
 class AlertUpdate(BaseModel):
-    status: Optional[str] = None
-    notes: Optional[str] = None
-    acknowledged_by: Optional[int] = None
-    acknowledged_at: Optional[datetime] = None
+    status: str | None = None
+    notes: str | None = None
+    acknowledged_by: int | None = None
+    acknowledged_at: datetime | None = None
 
 
 class GeoData(BaseModel):
-    country: Optional[str] = None
-    city: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    org: Optional[str] = None
+    country: str | None = None
+    city: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    org: str | None = None
 
 
 class AlertResponse(AlertBase):
     id: int
-    geo: Optional[GeoData] = None
+    geo: GeoData | None = None
     notes: str = ""
-    acknowledged_by: Optional[int] = None
-    acknowledged_at: Optional[datetime] = None
+    acknowledged_by: int | None = None
+    acknowledged_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -76,7 +77,9 @@ class AlertResponse(AlertBase):
         org = getattr(data, "geo_org", None)
         geo = None
         if any(v is not None for v in (country, city, lat, lon, org)):
-            geo = GeoData(country=country, city=city, latitude=lat, longitude=lon, org=org)
+            geo = GeoData(
+                country=country, city=city, latitude=lat, longitude=lon, org=org
+            )
         # Build a plain dict so the nested geo object is picked up alongside ORM attrs.
         return {
             "id": data.id,

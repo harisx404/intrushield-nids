@@ -1,14 +1,14 @@
 """WebSocket endpoint handler for real-time event streaming."""
+
 import asyncio
 import json
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
-
 from backend.api.websocket.manager import ws_manager
 from backend.core.exceptions import UnauthorizedException
 from backend.core.security import verify_token
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 log = structlog.get_logger(__name__)
 websocket_router = APIRouter()
@@ -22,15 +22,15 @@ async def websocket_events(
     token: Annotated[str | None, Query()] = None,
 ) -> None:
     """WebSocket endpoint for real-time alert and event streaming.
-    
+
     Authentication: pass JWT access token as query parameter:
         ws://localhost:8000/ws/events?token=eyJ...
-        
+
     Messages from server:
         {"type": "new_alert", "data": {...}}
         {"type": "stats_update", "data": {...}}
         {"type": "ping", "timestamp": "..."}
-        
+
     Messages from client:
         {"type": "pong"}
         {"type": "subscribe", "filters": {"severity": ["HIGH", "CRITICAL"]}}
@@ -70,9 +70,11 @@ async def websocket_events(
                 elif msg_type == "subscribe":
                     pass  # Future: filter broadcast by severity
                 elif msg_type == "get_stats":
-                    await websocket.send_text(json.dumps({"type": "stats_update", "data": {}}))
+                    await websocket.send_text(
+                        json.dumps({"type": "stats_update", "data": {}})
+                    )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue  # No message in 60s — client may be idle
             except json.JSONDecodeError:
                 pass  # Ignore malformed messages

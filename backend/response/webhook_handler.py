@@ -1,8 +1,8 @@
 """Webhook response handler — posts high-severity alerts to a chat webhook."""
+
 import logging
 
 import httpx
-
 from backend.core.config import settings
 from backend.response.base_handler import BaseResponseHandler, ResponseResult
 from backend.schemas.alert import AlertResponse
@@ -38,7 +38,9 @@ class WebhookHandler(BaseResponseHandler):
 
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(self.webhook_url, json=payload, timeout=5.0)
+                response = await client.post(
+                    self.webhook_url, json=payload, timeout=5.0
+                )
             if response.status_code >= 400:
                 logger.error("Webhook failed: %s", response.text)
                 return ResponseResult(

@@ -1,20 +1,24 @@
-from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class NetworkEventBase(BaseModel):
     timestamp: datetime
     event_type: str
     src_ip: str
-    src_port: Optional[int] = None
+    src_port: int | None = None
     dest_ip: str
-    dest_port: Optional[int] = None
+    dest_port: int | None = None
     protocol: str
-    flow_id: Optional[int] = None
-    content: Dict[str, Any] = Field(default_factory=dict)
+    flow_id: int | None = None
+    content: dict[str, Any] = Field(default_factory=dict)
+
 
 class NetworkEventCreate(NetworkEventBase):
     pass
+
 
 class NetworkEventResponse(NetworkEventBase):
     id: int

@@ -1,8 +1,10 @@
 """WebSocket connection manager for real-time alert broadcasting."""
+
 from __future__ import annotations
+
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -13,7 +15,7 @@ log = structlog.get_logger(__name__)
 
 class WebSocketManager:
     """Manages all active WebSocket connections and broadcasts messages.
-    
+
     Thread-safe via asyncio.Lock for mutations to the connection set.
     Gracefully handles disconnecting clients during broadcast.
     """
@@ -42,7 +44,7 @@ class WebSocketManager:
 
     async def broadcast(self, message: dict[str, Any]) -> None:
         """Broadcast a JSON message to all connected clients.
-        
+
         Automatically removes stale connections that raise errors during send.
         """
         if not self._connections:
@@ -68,26 +70,32 @@ class WebSocketManager:
 
     async def broadcast_alert(self, alert_data: dict[str, Any]) -> None:
         """Broadcast a new alert event to all clients."""
-        await self.broadcast({
-            "type": "new_alert",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "data": alert_data,
-        })
+        await self.broadcast(
+            {
+                "type": "new_alert",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "data": alert_data,
+            }
+        )
 
     async def broadcast_stats(self, stats: dict[str, Any]) -> None:
         """Broadcast statistics update (called every 30 seconds)."""
-        await self.broadcast({
-            "type": "stats_update",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "data": stats,
-        })
+        await self.broadcast(
+            {
+                "type": "stats_update",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "data": stats,
+            }
+        )
 
     async def send_ping(self) -> None:
         """Send keepalive ping to all clients."""
-        await self.broadcast({
-            "type": "ping",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        await self.broadcast(
+            {
+                "type": "ping",
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
 
 
 # Singleton instance shared across the application

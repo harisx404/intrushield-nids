@@ -1,9 +1,10 @@
 """Base model with timestamp fields shared by all tables."""
-from datetime import datetime, timezone
-from sqlalchemy import DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+
+from datetime import datetime
 
 from backend.core.database import Base  # noqa: F401 — re-exported for models
+from sqlalchemy import DateTime, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class TimestampMixin:

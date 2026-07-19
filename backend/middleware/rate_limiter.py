@@ -1,18 +1,19 @@
 import time
-from typing import Dict, Tuple
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 # Simple in-memory rate limiter: IP -> (request_count, window_start_time)
-_RATE_LIMIT_CACHE: Dict[str, Tuple[int, float]] = {}
+_RATE_LIMIT_CACHE: dict[str, tuple[int, float]] = {}
 RATE_LIMIT_WINDOW = 60.0  # 1 minute
 MAX_REQUESTS_PER_WINDOW = 100
+
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         client_ip = request.client.host if request.client else "unknown"
-        
+
         # Skip rate limiting for local tests/healthchecks
         if request.url.path == "/api/v1/health":
             return await call_next(request)
@@ -34,8 +35,8 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                 content={
                     "error": "Too Many Requests",
                     "message": "Rate limit exceeded. Please try again later.",
-                    "retry_after": int(RATE_LIMIT_WINDOW - (now - start_time))
-                }
+                    "retry_after": int(RATE_LIMIT_WINDOW - (now - start_time)),
+                },
             )
 
         response = await call_next(request)

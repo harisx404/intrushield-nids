@@ -4,21 +4,27 @@ NIDS FastAPI Application Factory.
 Configures the application with lifespan management, middleware stack,
 and router registration for all API endpoints.
 """
+
 import asyncio
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 import structlog
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from backend.api.v1.routes import alerts, auth, events, reports, rules, statistics, system
+from backend.api.v1.routes import (
+    alerts,
+    auth,
+    events,
+    reports,
+    rules,
+    statistics,
+    system,
+)
 from backend.api.websocket.handlers import websocket_router
 from backend.core.config import settings
 from backend.core.database import create_tables
 from backend.core.logging import setup_logging
-from backend.detection.eve_log_watcher import EVELogWatcher
 from backend.detection.alert_manager import AlertManager
+from backend.detection.eve_log_watcher import EVELogWatcher
 from backend.detection.geoip_enricher import GeoIPEnricher
 from backend.middleware.error_handler import register_exception_handlers
 from backend.middleware.rate_limiter import RateLimiterMiddleware
@@ -26,6 +32,8 @@ from backend.middleware.request_logger import RequestLoggerMiddleware
 from backend.response.response_engine import ResponseEngine
 from backend.services.blocked_ip_service import BlockedIPService
 from backend.services.statistics_service import StatisticsService
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 log = structlog.get_logger(__name__)
 
@@ -40,6 +48,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await create_tables()
     geoip = GeoIPEnricher(settings.GEOIP_DB_PATH)
     from backend.detection.threat_intel import ThreatIntel
+
     threat_intel = ThreatIntel()
     alert_manager = AlertManager(geoip_enricher=geoip, threat_intel=threat_intel)
     response_engine = ResponseEngine()
@@ -109,13 +118,17 @@ def create_app() -> FastAPI:
 
     # ── Routers ──────────────────────────────────────────────────────────
     prefix = "/api/v1"
-    app.include_router(auth.router,       prefix=f"{prefix}/auth", tags=["Authentication"])
-    app.include_router(alerts.router,     prefix=f"{prefix}/alerts", tags=["Alerts"])
-    app.include_router(rules.router,      prefix=f"{prefix}/rules", tags=["Detection Rules"])
-    app.include_router(events.router,     prefix=f"{prefix}/events", tags=["Network Events"])
-    app.include_router(statistics.router, prefix=f"{prefix}/statistics", tags=["Statistics"])
-    app.include_router(system.router,     prefix=f"{prefix}/system", tags=["System"])
-    app.include_router(reports.router,    prefix=f"{prefix}/reports", tags=["Reports"])
+    app.include_router(auth.router, prefix=f"{prefix}/auth", tags=["Authentication"])
+    app.include_router(alerts.router, prefix=f"{prefix}/alerts", tags=["Alerts"])
+    app.include_router(rules.router, prefix=f"{prefix}/rules", tags=["Detection Rules"])
+    app.include_router(
+        events.router, prefix=f"{prefix}/events", tags=["Network Events"]
+    )
+    app.include_router(
+        statistics.router, prefix=f"{prefix}/statistics", tags=["Statistics"]
+    )
+    app.include_router(system.router, prefix=f"{prefix}/system", tags=["System"])
+    app.include_router(reports.router, prefix=f"{prefix}/reports", tags=["Reports"])
     app.include_router(websocket_router)  # WebSocket at /ws/events
 
     return app

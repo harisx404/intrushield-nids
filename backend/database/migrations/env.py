@@ -1,17 +1,25 @@
 """Alembic environment configuration for async SQLAlchemy."""
+
 import asyncio
 from logging.config import fileConfig
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+
 from alembic import context
+from backend.core.config import settings
 
 # Import all models so Alembic can detect them for autogenerate
 from backend.core.database import Base  # noqa: F401
 from backend.models import (  # noqa: F401
-    alert, event, rule, response_log, statistics, user, audit_log
+    alert,
+    audit_log,
+    event,
+    response_log,
+    rule,
+    statistics,
+    user,
 )
-from backend.core.config import settings
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

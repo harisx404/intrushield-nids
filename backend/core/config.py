@@ -1,5 +1,7 @@
 """Application configuration loaded from environment variables."""
+
 from typing import Literal
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,7 +24,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ── Security ─────────────────────────────────────────────────────────
-    JWT_SECRET_KEY: str = Field(..., description="256-bit random key — CHANGE IN PRODUCTION")
+    JWT_SECRET_KEY: str = Field(
+        ..., description="256-bit random key — CHANGE IN PRODUCTION"
+    )
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7

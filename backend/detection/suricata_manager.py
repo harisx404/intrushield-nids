@@ -1,16 +1,19 @@
-import subprocess
 import logging
+import subprocess
 
 logger = logging.getLogger(__name__)
+
 
 class SuricataManager:
     @staticmethod
     def reload_rules() -> bool:
         """Send SIGHUP or use suricatasc to reload rules."""
         try:
-            result = subprocess.run(
-                ["suricatasc", "-c", "reload-rules"], 
-                capture_output=True, text=True, check=True
+            subprocess.run(
+                ["suricatasc", "-c", "reload-rules"],
+                capture_output=True,
+                text=True,
+                check=True,
             )
             logger.info("Suricata rules reloaded successfully.")
             return True

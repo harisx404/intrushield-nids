@@ -1,14 +1,14 @@
 """Alert routes — list, inspect, and update the status of security alerts."""
-from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
 from backend.core.database import get_db
 from backend.core.dependencies import AnalystPlus, CurrentUser
 from backend.schemas.alert import AlertFilter, AlertResponse
 from backend.schemas.common import ok, paginated
 from backend.services.alert_service import alert_service
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -19,11 +19,11 @@ async def list_alerts(
     db: Annotated[AsyncSession, Depends(get_db)],
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=20, ge=1, le=100),
-    severity: Optional[str] = Query(default=None),
-    status: Optional[str] = Query(default=None),
-    src_ip: Optional[str] = Query(default=None),
-    start_date: Optional[str] = Query(default=None),
-    end_date: Optional[str] = Query(default=None),
+    severity: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    src_ip: str | None = Query(default=None),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
 ) -> dict:
     """Retrieve paginated alerts with optional filtering."""
     filters = AlertFilter(
@@ -53,7 +53,9 @@ async def get_alert(
 ) -> dict:
     """Retrieve one alert with its full detail."""
     alert = await alert_service.get_alert(db, alert_id)
-    return ok(data=AlertResponse.model_validate(alert), message="Alert retrieved successfully")
+    return ok(
+        data=AlertResponse.model_validate(alert), message="Alert retrieved successfully"
+    )
 
 
 @router.post("/{alert_id}/acknowledge", summary="Acknowledge an alert")

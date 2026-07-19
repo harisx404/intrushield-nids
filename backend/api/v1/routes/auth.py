@@ -1,19 +1,21 @@
 """Authentication routes — login and token issuance."""
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
 from backend.core.dependencies import CurrentUser, get_db
 from backend.repositories import audit_repo
 from backend.schemas.auth import Token, UserResponse
 from backend.services.auth_service import auth_service
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 
-@router.post("/login", response_model=Token, summary="Authenticate and obtain an access token")
+@router.post(
+    "/login", response_model=Token, summary="Authenticate and obtain an access token"
+)
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -38,10 +40,14 @@ async def login(
     )
     await db.commit()
 
-    return Token(access_token=auth_service.issue_access_token(user), token_type="bearer")
+    return Token(
+        access_token=auth_service.issue_access_token(user), token_type="bearer"
+    )
 
 
-@router.get("/me", response_model=UserResponse, summary="Get the current authenticated user")
+@router.get(
+    "/me", response_model=UserResponse, summary="Get the current authenticated user"
+)
 async def read_current_user(current_user: CurrentUser) -> UserResponse:
     """Return the profile of the currently authenticated user."""
     return current_user

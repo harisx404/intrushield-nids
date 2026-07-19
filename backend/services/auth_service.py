@@ -1,11 +1,9 @@
 """Authentication service — credential verification and token issuance."""
-from typing import Optional
-
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.security import create_access_token, verify_password
 from backend.models.user import User
 from backend.repositories import user_repo
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AuthService:
@@ -13,7 +11,7 @@ class AuthService:
 
     async def authenticate(
         self, session: AsyncSession, username: str, password: str
-    ) -> Optional[User]:
+    ) -> User | None:
         """Return the user if the username/password pair is valid, else None.
 
         Verification runs even when the user is missing to keep the response

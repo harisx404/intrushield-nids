@@ -1,13 +1,12 @@
 """Service layer for alert retrieval and lifecycle management."""
-from datetime import datetime, timezone
-from typing import List, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime
 
 from backend.core.exceptions import NotFoundError
 from backend.models.alert import Alert
 from backend.repositories import alert_repo
 from backend.schemas.alert import AlertFilter, AlertUpdate
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AlertService:
@@ -15,10 +14,10 @@ class AlertService:
         self,
         session: AsyncSession,
         *,
-        filters: Optional[AlertFilter] = None,
+        filters: AlertFilter | None = None,
         page: int = 1,
         per_page: int = 20,
-    ) -> tuple[List[Alert], int]:
+    ) -> tuple[list[Alert], int]:
         return await alert_repo.list_filtered(
             session, filters=filters or AlertFilter(), page=page, per_page=per_page
         )
@@ -35,13 +34,13 @@ class AlertService:
         alert_id: int,
         status: str,
         *,
-        acknowledged_by: Optional[int] = None,
+        acknowledged_by: int | None = None,
     ) -> Alert:
         alert = await self.get_alert(session, alert_id)
         update = AlertUpdate(status=status)
         if acknowledged_by is not None:
             update.acknowledged_by = acknowledged_by
-            update.acknowledged_at = datetime.now(timezone.utc)
+            update.acknowledged_at = datetime.now(UTC)
         return await alert_repo.update(session, db_obj=alert, obj_in=update)
 
 

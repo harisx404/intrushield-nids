@@ -1,13 +1,12 @@
-from typing import Any
+from backend.core.dependencies import CurrentUser, get_db
+from backend.repositories.event_repository import event_repo
+from backend.schemas.common import paginated
+from backend.schemas.event import NetworkEventResponse
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.dependencies import get_db, CurrentUser
-from backend.repositories.event_repository import event_repo
-from backend.schemas.event import NetworkEventResponse
-from backend.schemas.common import paginated
-
 router = APIRouter()
+
 
 @router.get("", summary="List all events")
 async def read_events(

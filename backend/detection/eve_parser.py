@@ -5,34 +5,38 @@ Converts raw EVE JSON dict into typed Python objects.
 Handles all event types: alert, dns, http, tls, flow, stats, fileinfo, anomaly.
 Never raises exceptions on malformed data — returns None instead.
 """
+
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 
 @dataclass
 class EVEEvent:
     """Base parsed EVE event."""
+
     event_type: str
     timestamp: datetime
-    src_ip: Optional[str] = None
-    src_port: Optional[int] = None
-    dst_ip: Optional[str] = None
-    dst_port: Optional[int] = None
-    protocol: Optional[str] = None
-    flow_id: Optional[str] = None
-    in_iface: Optional[str] = None
+    src_ip: str | None = None
+    src_port: int | None = None
+    dst_ip: str | None = None
+    dst_port: int | None = None
+    protocol: str | None = None
+    flow_id: str | None = None
+    in_iface: str | None = None
     raw: dict = field(default_factory=dict)
 
 
 @dataclass
 class AlertEvent(EVEEvent):
     """Parsed Suricata alert event."""
+
     signature_id: int = 0
     signature: str = ""
     category: str = ""
-    severity: int = 3        # Suricata severity: 1=high, 4=low
+    severity: int = 3  # Suricata severity: 1=high, 4=low
     action: str = "allowed"
     rev: int = 1
     gid: int = 1
@@ -42,12 +46,12 @@ class EVEParser:
     """Parse raw Suricata EVE JSON events into typed objects."""
 
     @staticmethod
-    def parse(raw: dict[str, Any]) -> Optional[EVEEvent]:
+    def parse(raw: dict[str, Any]) -> EVEEvent | None:
         """Parse a raw EVE JSON dict into a typed EVEEvent.
-        
+
         Args:
             raw: Raw dictionary from JSON-parsed EVE log line.
-            
+
         Returns:
             Typed EVEEvent subclass or None if event cannot be parsed
             or is an unrecognised event type.
@@ -95,14 +99,14 @@ class EVEParser:
     @staticmethod
     def _parse_timestamp(ts_str: str) -> datetime:
         """Parse Suricata timestamp string to aware datetime.
-        
+
         Suricata format: "2024-01-15T14:23:11.456789+0000"
         """
         if not ts_str:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
         try:
             # Handle Suricata's +0000 suffix
             ts_str = ts_str.replace("+0000", "+00:00")
             return datetime.fromisoformat(ts_str)
         except ValueError:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)

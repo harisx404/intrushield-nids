@@ -1,4 +1,5 @@
 """Email response handler — notifies operators of critical alerts."""
+
 import logging
 
 from backend.core.config import settings

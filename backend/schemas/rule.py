@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
+
 
 class DetectionRuleBase(BaseModel):
     sid: int
@@ -11,15 +12,18 @@ class DetectionRuleBase(BaseModel):
     is_active: bool = True
     is_custom: bool = True
 
+
 class DetectionRuleCreate(DetectionRuleBase):
     pass
 
+
 class DetectionRuleUpdate(BaseModel):
-    name: Optional[str] = None
-    body: Optional[str] = None
-    severity: Optional[str] = None
-    category: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    body: str | None = None
+    severity: str | None = None
+    category: str | None = None
+    is_active: bool | None = None
+
 
 class DetectionRuleResponse(DetectionRuleBase):
     id: int

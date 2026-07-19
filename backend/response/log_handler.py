@@ -1,11 +1,11 @@
 """Log response handler — writes alert details to response log file."""
+
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import aiofiles
 import structlog
-
 from backend.response.base_handler import BaseResponseHandler, ResponseResult
 from backend.schemas.alert import AlertResponse
 
@@ -24,11 +24,11 @@ class LogHandler(BaseResponseHandler):
         """Append alert to today's response log file."""
         try:
             LOG_DIR.mkdir(parents=True, exist_ok=True)
-            date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date_str = datetime.now(UTC).strftime("%Y-%m-%d")
             log_file = LOG_DIR / f"response_{date_str}.log"
 
             entry = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "alert_id": alert.id,
                 "severity": alert.severity,
                 "signature": alert.signature,

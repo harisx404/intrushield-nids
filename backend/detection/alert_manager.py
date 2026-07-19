@@ -18,7 +18,9 @@ log = structlog.get_logger(__name__)
 class AlertManager:
     """Turns parsed Suricata alert events into persisted, enriched alerts."""
 
-    def __init__(self, geoip_enricher: GeoIPEnricher, threat_intel: ThreatIntel) -> None:
+    def __init__(
+        self, geoip_enricher: GeoIPEnricher, threat_intel: ThreatIntel
+    ) -> None:
         self.geoip_enricher = geoip_enricher
         self.threat_intel = threat_intel
         # Deduplicate identical alerts for 60s; cap at 10k keys to bound memory.

@@ -1,27 +1,30 @@
 """Service layer for traffic/alert statistics and dashboard aggregation."""
+
 import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 import structlog
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.core.database import AsyncSessionLocal
 from backend.models.alert import Alert
 from backend.models.rule import DetectionRule
 from backend.models.statistics import TrafficStatistics
 from backend.repositories import statistics_repo
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger(__name__)
 
 
 class StatisticsService:
-    async def get_current_stats(self, session: AsyncSession) -> Optional[TrafficStatistics]:
+    async def get_current_stats(
+        self, session: AsyncSession
+    ) -> TrafficStatistics | None:
         return await statistics_repo.get_latest(session)
 
-    async def aggregate_once(self, session: AsyncSession, *, window_seconds: int = 60) -> Optional[TrafficStatistics]:
+    async def aggregate_once(
+        self, session: AsyncSession, *, window_seconds: int = 60
+    ) -> TrafficStatistics | None:
         """Compute and persist a single traffic-statistics snapshot.
 
         Counts alerts observed in the trailing ``window_seconds`` and carries
@@ -30,7 +33,7 @@ class StatisticsService:
         Returns the persisted row, or ``None`` if a snapshot for this timestamp
         already exists (the timestamp column is unique).
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         window_start = now - timedelta(seconds=window_seconds)
 
         severity_rows = await session.execute(
@@ -74,7 +77,9 @@ class StatisticsService:
                 await asyncio.sleep(interval_seconds)
                 try:
                     async with AsyncSessionLocal() as session:
-                        await self.aggregate_once(session, window_seconds=interval_seconds)
+                        await self.aggregate_once(
+                            session, window_seconds=interval_seconds
+                        )
                 except asyncio.CancelledError:
                     raise
                 except Exception:  # noqa: BLE001 — never let one tick kill the loop
@@ -89,27 +94,44 @@ class StatisticsService:
         Shape matches the frontend DashboardStats interface in
         frontend/app/(dashboard)/dashboard/page.tsx.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         day_ago = now - timedelta(hours=24)
 
-        total_today = await session.scalar(
-            select(func.count()).select_from(Alert).where(Alert.timestamp >= day_ago)
-        ) or 0
+        total_today = (
+            await session.scalar(
+                select(func.count())
+                .select_from(Alert)
+                .where(Alert.timestamp >= day_ago)
+            )
+            or 0
+        )
 
-        critical_high_today = await session.scalar(
-            select(func.count())
-            .select_from(Alert)
-            .where(Alert.timestamp >= day_ago, Alert.severity.in_(("CRITICAL", "HIGH")))
-        ) or 0
+        critical_high_today = (
+            await session.scalar(
+                select(func.count())
+                .select_from(Alert)
+                .where(
+                    Alert.timestamp >= day_ago, Alert.severity.in_(("CRITICAL", "HIGH"))
+                )
+            )
+            or 0
+        )
 
-        active_rules = await session.scalar(
-            select(func.count()).select_from(DetectionRule).where(DetectionRule.is_active.is_(True))
-        ) or 0
+        active_rules = (
+            await session.scalar(
+                select(func.count())
+                .select_from(DetectionRule)
+                .where(DetectionRule.is_active.is_(True))
+            )
+            or 0
+        )
 
         latest_stats = await statistics_repo.get_latest(session)
         packets_analyzed = 0
         if latest_stats:
-            packets_analyzed = (latest_stats.packets_in or 0) + (latest_stats.packets_out or 0)
+            packets_analyzed = (latest_stats.packets_in or 0) + (
+                latest_stats.packets_out or 0
+            )
 
         # Severity breakdown across the last 24h.
         severity_rows = await session.execute(
@@ -128,7 +150,7 @@ class StatisticsService:
         buckets = {i: 0 for i in range(24)}
         for ts, _ in trend_rows.all():
             if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
+                ts = ts.replace(tzinfo=UTC)
             hours_ago = int((now - ts).total_seconds() // 3600)
             if 0 <= hours_ago < 24:
                 buckets[23 - hours_ago] += 1

@@ -5,6 +5,7 @@ Monitors eve.json in real-time, parses each line as a JSON event,
 and forwards to the AlertManager. Handles file-not-found gracefully,
 supports log rotation, and never blocks the asyncio event loop.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,7 +29,7 @@ FILE_WAIT_INTERVAL_SECONDS: float = 5.0
 
 class EVELogWatcher:
     """Watches Suricata's EVE JSON log file and processes new events.
-    
+
     Designed to be resilient:
     - File not existing: waits and retries every 5 seconds
     - File rotation (Suricata logrotate): detects inode change, reopens
