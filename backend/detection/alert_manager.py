@@ -7,7 +7,6 @@ from backend.core.database import AsyncSessionLocal
 from backend.core.event_bus import event_bus
 from backend.detection.eve_parser import AlertEvent
 from backend.detection.geoip_enricher import GeoIPEnricher
-from backend.detection.threat_intel import ThreatIntel
 from backend.repositories import alert_repo
 from backend.schemas.alert import AlertCreate, AlertResponse
 from cachetools import TTLCache
@@ -18,11 +17,8 @@ log = structlog.get_logger(__name__)
 class AlertManager:
     """Turns parsed Suricata alert events into persisted, enriched alerts."""
 
-    def __init__(
-        self, geoip_enricher: GeoIPEnricher, threat_intel: ThreatIntel
-    ) -> None:
+    def __init__(self, geoip_enricher: GeoIPEnricher) -> None:
         self.geoip_enricher = geoip_enricher
-        self.threat_intel = threat_intel
         # Deduplicate identical alerts for 60s; cap at 10k keys to bound memory.
         self._recent_alerts: TTLCache = TTLCache(maxsize=10000, ttl=60)
 
@@ -34,7 +30,7 @@ class AlertManager:
             return
         self._recent_alerts[dedup_key] = True
 
-        country = self.geoip_enricher.lookup_country(event.src_ip or "")
+        geo = self.geoip_enricher.lookup(event.src_ip or "")
 
         alert_create = AlertCreate(
             timestamp=event.timestamp,
@@ -48,7 +44,10 @@ class AlertManager:
             dst_port=event.dst_port,
             protocol=event.protocol,
             flow_id=event.flow_id,
-            geo_country=country,
+            geo_country=geo.country,
+            geo_city=geo.city,
+            geo_lat=geo.latitude,
+            geo_lon=geo.longitude,
             raw_eve=event.raw,
         )
 

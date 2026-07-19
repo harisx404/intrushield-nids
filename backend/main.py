@@ -13,8 +13,6 @@ import structlog
 from backend.api.v1.routes import (
     alerts,
     auth,
-    events,
-    reports,
     rules,
     statistics,
     system,
@@ -47,10 +45,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Initialize core components
     await create_tables()
     geoip = GeoIPEnricher(settings.GEOIP_DB_PATH)
-    from backend.detection.threat_intel import ThreatIntel
-
-    threat_intel = ThreatIntel()
-    alert_manager = AlertManager(geoip_enricher=geoip, threat_intel=threat_intel)
+    alert_manager = AlertManager(geoip_enricher=geoip)
     response_engine = ResponseEngine()
     stats_service = StatisticsService()
     blocked_ip_service = BlockedIPService()
@@ -122,13 +117,9 @@ def create_app() -> FastAPI:
     app.include_router(alerts.router, prefix=f"{prefix}/alerts", tags=["Alerts"])
     app.include_router(rules.router, prefix=f"{prefix}/rules", tags=["Detection Rules"])
     app.include_router(
-        events.router, prefix=f"{prefix}/events", tags=["Network Events"]
-    )
-    app.include_router(
         statistics.router, prefix=f"{prefix}/statistics", tags=["Statistics"]
     )
     app.include_router(system.router, prefix=f"{prefix}/system", tags=["System"])
-    app.include_router(reports.router, prefix=f"{prefix}/reports", tags=["Reports"])
     app.include_router(websocket_router)  # WebSocket at /ws/events
 
     return app

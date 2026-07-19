@@ -1,25 +1,41 @@
-import logging
+"""Control interface for a running Suricata engine via ``suricatasc``."""
+
+from __future__ import annotations
+
 import subprocess
 
-logger = logging.getLogger(__name__)
+import structlog
+
+log = structlog.get_logger(__name__)
 
 
 class SuricataManager:
+    """Thin wrapper around the ``suricatasc`` control socket client."""
+
     @staticmethod
     def reload_rules() -> bool:
-        """Send SIGHUP or use suricatasc to reload rules."""
+        """Hot-reload Suricata's ruleset without dropping active flows.
+
+        Returns ``True`` when the reload command is accepted, ``False`` when
+        the engine is unreachable (``suricatasc`` missing, or the command
+        fails). Never raises — callers translate ``False`` into a 503.
+        """
         try:
             subprocess.run(
                 ["suricatasc", "-c", "reload-rules"],
                 capture_output=True,
                 text=True,
                 check=True,
+                timeout=10,
             )
-            logger.info("Suricata rules reloaded successfully.")
+            log.info("suricata_rules_reloaded")
             return True
         except FileNotFoundError:
-            logger.warning("suricatasc not found. Are you in a container?")
+            log.warning("suricatasc_not_found", hint="Suricata not co-located with API")
             return False
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to reload rules: {e.stderr}")
+        except subprocess.TimeoutExpired:
+            log.error("suricata_reload_timeout")
+            return False
+        except subprocess.CalledProcessError as exc:
+            log.error("suricata_reload_failed", stderr=exc.stderr)
             return False

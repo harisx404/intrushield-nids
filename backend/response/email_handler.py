@@ -1,13 +1,13 @@
 """Email response handler — notifies operators of critical alerts."""
 
-import logging
+import structlog
 
 from backend.core.config import settings
 from backend.core.constants import severity_at_least
 from backend.response.base_handler import BaseResponseHandler, ResponseResult
 from backend.schemas.alert import AlertResponse
 
-logger = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 class EmailHandler(BaseResponseHandler):
@@ -21,14 +21,22 @@ class EmailHandler(BaseResponseHandler):
         )
 
     async def handle(self, alert: AlertResponse) -> ResponseResult:
-        # Delivery is stubbed until SMTP credentials are wired up; log the intent
-        # so the action is still auditable.
-        logger.info(
-            "Simulating email notification for CRITICAL alert: %s", alert.signature
+        # SMTP delivery is not configured in this build. Rather than reporting a
+        # send that never happened, record the notification as SKIPPED so the
+        # audit trail stays truthful. Wire an SMTP client here to enable it.
+        log.info(
+            "email_notification_skipped",
+            reason="SMTP not configured",
+            signature=alert.signature,
+            severity=alert.severity,
         )
         return ResponseResult(
             handler_name=self.name,
             action="email_notification",
-            status="SUCCESS",
-            details={"signature": alert.signature, "severity": alert.severity},
+            status="SKIPPED",
+            details={
+                "signature": alert.signature,
+                "severity": alert.severity,
+                "reason": "SMTP delivery not configured",
+            },
         )

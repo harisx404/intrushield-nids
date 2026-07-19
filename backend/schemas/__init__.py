@@ -2,7 +2,6 @@ from .alert import AlertBase, AlertCreate, AlertResponse, AlertUpdate
 from .audit import AuditLogBase, AuditLogCreate, AuditLogResponse
 from .auth import Token, TokenPayload, UserBase, UserCreate, UserResponse
 from .common import ApiResponse, ErrorResponse
-from .event import NetworkEventBase, NetworkEventCreate, NetworkEventResponse
 from .rule import (
     DetectionRuleBase,
     DetectionRuleCreate,
@@ -27,9 +26,6 @@ __all__ = [
     "AlertCreate",
     "AlertUpdate",
     "AlertResponse",
-    "NetworkEventBase",
-    "NetworkEventCreate",
-    "NetworkEventResponse",
     "DetectionRuleBase",
     "DetectionRuleCreate",
     "DetectionRuleUpdate",

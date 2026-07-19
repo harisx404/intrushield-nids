@@ -48,48 +48,6 @@ def upgrade() -> None:
         )
 
     op.create_table(
-        "events",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("timestamp", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("event_type", sa.String(length=50), nullable=False),
-        sa.Column("src_ip", sa.String(length=50), nullable=False),
-        sa.Column("src_port", sa.Integer(), nullable=True),
-        sa.Column("dest_ip", sa.String(length=50), nullable=False),
-        sa.Column("dest_port", sa.Integer(), nullable=True),
-        sa.Column("protocol", sa.String(length=20), nullable=False),
-        sa.Column("flow_id", sa.Integer(), nullable=True),
-        sa.Column("content", sa.JSON(), nullable=False),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    with op.batch_alter_table("events", schema=None) as batch_op:
-        batch_op.create_index(
-            batch_op.f("ix_events_dest_ip"), ["dest_ip"], unique=False
-        )
-        batch_op.create_index(
-            batch_op.f("ix_events_event_type"), ["event_type"], unique=False
-        )
-        batch_op.create_index(
-            batch_op.f("ix_events_flow_id"), ["flow_id"], unique=False
-        )
-        batch_op.create_index(batch_op.f("ix_events_id"), ["id"], unique=False)
-        batch_op.create_index(batch_op.f("ix_events_src_ip"), ["src_ip"], unique=False)
-        batch_op.create_index(
-            batch_op.f("ix_events_timestamp"), ["timestamp"], unique=False
-        )
-
-    op.create_table(
         "rules",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("sid", sa.Integer(), nullable=False),
@@ -328,15 +286,6 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f("ix_rules_id"))
 
     op.drop_table("rules")
-    with op.batch_alter_table("events", schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f("ix_events_timestamp"))
-        batch_op.drop_index(batch_op.f("ix_events_src_ip"))
-        batch_op.drop_index(batch_op.f("ix_events_id"))
-        batch_op.drop_index(batch_op.f("ix_events_flow_id"))
-        batch_op.drop_index(batch_op.f("ix_events_event_type"))
-        batch_op.drop_index(batch_op.f("ix_events_dest_ip"))
-
-    op.drop_table("events")
     with op.batch_alter_table("blocked_ips", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_blocked_ips_ip_address"))
         batch_op.drop_index(batch_op.f("ix_blocked_ips_id"))

@@ -2,7 +2,8 @@
 
 import pytest
 
-from backend.core.exceptions import NotFoundError
+from backend.core.exceptions import NotFoundError, ValidationException
+from backend.detection.rule_validator import RuleValidator
 from backend.schemas.rule import DetectionRuleCreate, DetectionRuleUpdate
 from backend.services.rule_service import rule_service
 
@@ -66,3 +67,17 @@ async def test_update_rule_changes_fields(db_session):
     )
     assert updated.is_active is False
     assert updated.name == "Renamed"
+
+
+@pytest.mark.asyncio
+async def test_create_rule_rejects_invalid_syntax(db_session, monkeypatch):
+    # When suricata -T reports the rule as invalid, creation must fail with a
+    # 400-style ValidationException and persist nothing.
+    monkeypatch.setattr(
+        RuleValidator, "validate_rule", lambda body: (False, "syntax error near sid")
+    )
+    with pytest.raises(ValidationException):
+        await rule_service.create_rule(db_session, rule_in=_rule_data(sid=1000013))
+
+    _, total = await rule_service.get_rules(db_session)
+    assert total == 0

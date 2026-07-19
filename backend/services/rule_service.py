@@ -1,6 +1,9 @@
+import asyncio
+
 import structlog
 from backend.core.config import settings
-from backend.core.exceptions import NotFoundError
+from backend.core.exceptions import NotFoundError, ValidationException
+from backend.detection.rule_validator import RuleValidator
 from backend.models.rule import DetectionRule
 from backend.repositories import rule_repo
 from backend.schemas.rule import DetectionRuleCreate, DetectionRuleUpdate
@@ -30,6 +33,16 @@ class RuleService:
     async def create_rule(
         self, session: AsyncSession, rule_in: DetectionRuleCreate
     ) -> DetectionRule:
+        # Validate Suricata syntax before persisting. The validator runs
+        # `suricata -T` in a worker thread so it never blocks the event loop;
+        # when the suricata binary is unavailable (dev/CI) it returns valid and
+        # skips, so this never blocks rule creation in those environments.
+        valid, message = await asyncio.to_thread(
+            RuleValidator.validate_rule, rule_in.body
+        )
+        if not valid:
+            raise ValidationException(f"Invalid Suricata rule syntax: {message}")
+
         rule = await rule_repo.create(session, obj_in=rule_in)
         if rule_in.is_active:
             _append_to_file(rule_in.body)
