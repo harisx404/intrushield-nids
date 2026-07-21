@@ -34,3 +34,14 @@ async def reload_suricata_rules() -> dict:
 async def health_check() -> dict:
     """Liveness probe used by Docker and uptime monitors."""
     return {"status": "ok"}
+
+
+@router.get("/seed")
+async def manual_seed() -> dict:
+    """Manually trigger the database seeding process."""
+    from backend.database.seed import seed_db
+    try:
+        await seed_db()
+        return {"status": "success", "message": "Database seeded successfully"}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
