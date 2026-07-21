@@ -1,179 +1,248 @@
-# CodeAlpha Network Intrusion Detection System (NIDS)
+# NIDS-Pro — Network Intrusion Detection System
 
 <div align="center">
+
   <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version" />
   <a href="https://github.com/harisx404/CodeAlpha-Network-Intrusion-Detection-System/actions/workflows/ci.yml">
     <img src="https://github.com/harisx404/CodeAlpha-Network-Intrusion-Detection-System/actions/workflows/ci.yml/badge.svg" alt="CI" />
   </a>
   <img src="https://img.shields.io/badge/python-3.11-blue.svg" alt="Python 3.11" />
-  <img src="https://img.shields.io/badge/next.js-14-black.svg" alt="Next.js" />
-  <img src="https://img.shields.io/badge/suricata-7.0-red.svg" alt="Suricata" />
+  <img src="https://img.shields.io/badge/next.js-14-black.svg" alt="Next.js 14" />
+  <img src="https://img.shields.io/badge/suricata-7.0-red.svg" alt="Suricata 7.0" />
+  <img src="https://img.shields.io/badge/docker-compose-2496ED.svg?logo=docker&logoColor=white" alt="Docker Compose" />
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License" />
+
 </div>
 
 <br/>
 
-A professional, production-grade **Network Intrusion Detection System (NIDS)** engineered for the CodeAlpha Cybersecurity Internship. This platform functions as a modern Security Operations Center (SOC) dashboard, orchestrating Suricata for deep packet inspection, a high-throughput async Python backend, and a real-time React frontend.
+A **production-grade Security Operations Center (SOC) platform** built as part of the [CodeAlpha](https://www.codealpha.tech/) Cybersecurity Internship.
+
+It orchestrates **Suricata** (deep packet inspection) with a real-time async **FastAPI** backend and a live **Next.js** dashboard — delivering instant threat visibility from raw packets to analyst screens.
 
 ---
 
-## 📸 Screenshots
+## 🔑 First Login (Default Credentials)
 
-> Add product screenshots to the `assets/` folder and reference them here. Suggested captures: the login screen, the populated dashboard (KPI cards + charts), the alerts table, the rules manager, and the live monitoring view.
+> ⚠️ For local/demo use only. Change these before any real deployment.
 
-| Login | Dashboard |
-| :---: | :---: |
-| ![Login](assets/login.png) | ![Dashboard](assets/dashboard.png) |
+| Field    | Value           |
+|----------|-----------------|
+| URL      | `http://localhost` |
+| Username | `admin`         |
+| Password | `changeme123`   |
+| API Docs | `http://localhost:8000/docs` |
 
-| Alerts | Rules |
-| :---: | :---: |
-| ![Alerts](assets/alerts.png) | ![Rules](assets/rules.png) |
+Credentials are seeded automatically on first `docker compose up`.
 
 ---
 
+## 🎯 What This Project Demonstrates
 
-## 🎯 Executive Summary
-
-The modern threat landscape requires network defenses that are not just accurate, but highly observable. Traditional NIDS setups often relegate analysts to archaic terminal interfaces or slow-polling dashboards. 
-
-This project bridges that gap by providing a **real-time, asynchronous pipeline** that ingests raw network packets, parses Suricata EVE logs instantaneously, enriches the data via Threat Intelligence APIs, and pushes the alerts directly to a high-performance Next.js dashboard via WebSockets.
+| Area | Skill |
+|------|-------|
+| **Async Python** | FastAPI + SQLAlchemy async sessions, `aiofiles` file tailing |
+| **Real-time Systems** | WebSocket broadcast manager, auto-reconnecting client |
+| **Security Engineering** | Suricata IDS integration, JWT auth, rate limiting, audit logging |
+| **Data Engineering** | EVE JSON parsing pipeline, GeoIP enrichment, TTL deduplication |
+| **Frontend** | Next.js 14, Zustand state management, interactive SOC dashboard |
+| **DevOps** | Multi-stage Docker builds, nginx reverse proxy, GitHub Actions CI/CD |
+| **Architecture** | Domain-Driven Design, repository pattern, event bus, response engine |
 
 ---
 
 ## 🏗️ System Architecture
 
-This repository strictly adheres to a **Layered Domain-Driven Design (DDD)**, ensuring separation of concerns, scalability, and testability.
-
-### 1. Detection Engine (Suricata)
-Running in a privileged Docker container bound to the host network interface, Suricata acts as the frontline packet sniffer. It utilizes a combination of Emerging Threats (ET) rules and custom `.rules` files to detect anomalies ranging from nmap scans to SQL injections. Detections are written as line-delimited JSON to `eve.json`.
-
-### 2. The Asynchronous Backend (FastAPI)
-The core of the system is a Python 3.11 API built around non-blocking I/O so ingestion doesn't stall request handling. The backend employs:
-- **`aiofiles` Tailing**: A background async task tails `eve.json` non-blockingly, parsing new lines as they're written rather than blocking the event loop on I/O.
-- **SQLAlchemy (Async)**: Alerts are persisted through an async session to SQLite (or PostgreSQL).
-- **FastAPI WebSockets**: A broadcast manager pushes validated `Alert` payloads to every connected client as soon as they are ingested.
-
-### 3. The Frontend App (Next.js 14)
-Built with React, TailwindCSS, and Zustand. Key choices:
-- **Zustand State Stores**: Alerts land in a shared store, keeping prop-drilling out of the component tree.
-- **Auto-reconnecting WebSocket**: A `useWebSocket` hook maintains the live feed with exponential backoff (1s up to 32s) and dispatches incoming alerts straight into the store.
+```
+                 ┌─────────────────────────────────────────────┐
+  Raw Network ──▶│  Suricata 7 (privileged, host network mode) │
+  Packets         │  · Deep packet inspection                   │
+                  │  · Custom + ET ruleset                      │
+                  │  · Writes alerts to eve.json                │
+                  └─────────────────┬───────────────────────────┘
+                                    │ eve.json (shared volume)
+                  ┌─────────────────▼───────────────────────────┐
+                  │  FastAPI Backend (Python 3.11 async)        │
+                  │  · aiofiles tail loop → EVE parser          │
+                  │  · GeoIP enrichment → deduplication         │
+                  │  · SQLite/PostgreSQL persistence            │
+                  │  · WebSocket broadcast manager              │
+                  │  · REST API  /api/v1/*                      │
+                  └─────────────────┬───────────────────────────┘
+                                    │ REST + WebSocket
+                  ┌─────────────────▼───────────────────────────┐
+                  │  Next.js 14 Frontend (React, Zustand)       │
+                  │  · Real-time alert feed via WebSocket       │
+                  │  · Dashboard KPIs, charts, Top Attackers    │
+                  │  · Alert management (ack, resolve, filter)  │
+                  │  · Suricata rule CRUD                       │
+                  └─────────────────┬───────────────────────────┘
+                                    │
+                  ┌─────────────────▼───────────────────────────┐
+                  │  NGINX (port 80)                            │
+                  │  · Reverse proxies /api/ → backend :8000    │
+                  │  · Proxies /ws/ → backend WebSocket         │
+                  │  · Serves frontend on /                     │
+                  └─────────────────────────────────────────────┘
+```
 
 ---
 
-## 🚀 Quickstart Guide
+## 🚀 Quickstart (5 Minutes)
 
 ### Prerequisites
-- Docker & Docker Compose
-- Python 3.11+ (for local development)
-- Node.js 20+ (for local UI compilation)
+- **Docker Desktop** ≥ 4.x with Docker Compose v2
+- Git
 
-### One-Command Setup
-We provide an automated bootstrap script that checks dependencies, builds the containers, generates environment files, and runs database migrations.
+### One-command setup
 
 ```bash
 git clone https://github.com/harisx404/CodeAlpha-Network-Intrusion-Detection-System.git
 cd CodeAlpha-Network-Intrusion-Detection-System
 
-# Run the unified setup script
-bash scripts/setup.sh
+# Build and start all containers (first run seeds the database automatically)
+docker compose up --build -d
+
+# Watch the startup logs to confirm everything is healthy
+docker compose logs -f backend
 ```
 
-The SOC Dashboard will be immediately available at `http://localhost:3000`. The API Swagger documentation is at `http://localhost:8000/docs`.
+The SOC dashboard will be live at **http://localhost** in about 30 seconds.
 
-### Run Modes
+> **Note for Windows users**: Suricata runs in `network_mode: host` and requires Linux capabilities. It will show as exited on Docker Desktop for Windows — this is expected. The rest of the stack (backend + frontend + nginx) works fully and the dashboard comes pre-populated with realistic sample alerts via the seed script.
 
-The project supports two ways to run the full stack:
-
-**1. Docker (recommended — nginx-fronted).** A single command brings up Suricata, the backend, the frontend, and an nginx reverse proxy:
+### Useful commands
 
 ```bash
-docker compose -f docker-compose.yml up --build
+# Check all container health
+docker compose ps
+
+# View live backend logs
+docker compose logs -f backend
+
+# Rebuild a single service after code changes
+docker compose up --build backend -d
+
+# Stop everything
+docker compose down
+
+# Full reset (removes database volume too)
+docker compose down -v
 ```
-
-Then open **`http://localhost/`** (port 80, via nginx). The API docs are at `http://localhost/docs`. In this mode the browser talks to everything through nginx, so the frontend is configured with `NEXT_PUBLIC_API_URL=http://localhost/api/v1`.
-
-> Running plain `docker compose up` (without `-f`) also loads `docker-compose.override.yml`, which enables live-reload bind mounts for local development. Use the explicit `-f docker-compose.yml` form for a clean, production-style run.
-
-**2. Local dev (no Docker).** Run the backend and frontend directly:
-
-```bash
-# Backend (from repo root)
-python -c "import secrets; print(secrets.token_hex(32))"   # put this in backend/.env as JWT_SECRET_KEY
-cp backend/.env.example backend/.env
-cd backend && pip install -r requirements.txt
-cd .. && PYTHONPATH=. uvicorn backend.main:app --reload
-
-# Frontend (in a second terminal)
-cd frontend && npm ci && npm run dev
-```
-
-In local dev the frontend runs on `http://localhost:3000` and talks to the backend directly at `http://localhost:8000/api/v1` (set in `frontend/.env.local`).
-
-### First Login
-
-The stack seeds a demo admin user on first startup when `SEED_DEMO_USER=true` (the default in `backend/.env.example` and in Docker). Log in with:
-
-| Field | Value |
-| --- | --- |
-| Username | `admin` |
-| Password | `changeme123` |
-
-> **Change this before any public/production deployment.** For a non-demo setup, set `SEED_DEMO_USER=false` and create users explicitly:
->
-> ```bash
-> # Prompts for a password (nothing sensitive is committed)
-> PYTHONPATH=. python scripts/create_user.py --username admin --email admin@example.com --role admin
-> ```
 
 ---
 
+## 📐 API Reference
 
-## 🛡️ Penetration Testing & Simulation
+Interactive Swagger documentation is available at **http://localhost:8000/docs** while the stack is running.
 
-To exercise the pipeline end to end, we include a traffic-generation script that uses `scapy` to craft attack-like packets against the local interface. `scapy` ships in the dev requirements:
+### Core Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/auth/login` | Authenticate → receive JWT |
+| `GET` | `/api/v1/auth/me` | Get current user profile |
+| `GET` | `/api/v1/alerts` | List alerts (filters: severity, status, src_ip, page) |
+| `GET` | `/api/v1/alerts/{id}` | Get single alert with full detail |
+| `POST` | `/api/v1/alerts/{id}/acknowledge` | Acknowledge an alert |
+| `POST` | `/api/v1/alerts/{id}/resolve` | Resolve an alert |
+| `GET` | `/api/v1/rules` | List detection rules |
+| `POST` | `/api/v1/rules` | Create a new rule |
+| `PUT` | `/api/v1/rules/{id}` | Update / toggle a rule |
+| `DELETE` | `/api/v1/rules/{id}` | Delete a rule |
+| `GET` | `/api/v1/statistics/dashboard` | Dashboard KPI stats |
+| `GET` | `/api/v1/statistics/current` | Latest traffic stats snapshot |
+| `GET` | `/api/v1/system/health` | Liveness probe |
+| `POST` | `/api/v1/system/suricata/reload` | Hot-reload Suricata ruleset |
+| `WS` | `/ws/events?token={jwt}` | Real-time alert WebSocket feed |
+
+---
+
+## 🛡️ Detection Rules
+
+The platform ships with **10 production-quality Suricata rules** covering:
+
+| # | Rule | Technique |
+|---|------|-----------|
+| 1 | SSH Brute Force Detection | Threshold tracking by source IP |
+| 2 | SQL Injection (OR 1=1) | HTTP URI content matching |
+| 3 | SQL Injection (UNION SELECT) | Multi-content HTTP match |
+| 4 | Nmap OS Detection Probe | TCP flag combination |
+| 5 | Log4Shell (CVE-2021-44228) | JNDI string detection |
+| 6 | XSS Probe | `<script>` in HTTP URI |
+| 7 | Reverse Shell | Outbound `/bin/bash -i` detection |
+| 8 | DNS Exfiltration | Large TXT record anomaly |
+| 9 | ICMP Ping Sweep | Threshold-based scan detection |
+| 10 | Directory Traversal | `/etc/passwd` in URI |
+
+Custom rules can be added directly from the **Rules page** in the dashboard or by placing them in `suricata/rules/custom.rules`.
+
+---
+
+## 📡 Traffic Simulation
+
+To trigger live alerts through the pipeline:
 
 ```bash
 pip install -r backend/requirements-dev.txt
 
-# Generate 60 seconds of attack-like traffic (requires root/admin privileges)
+# Generate 60 seconds of attack-like traffic (requires root/admin)
 sudo python scripts/generate_traffic.py --duration 60 --interface eth0
 ```
-*This will immediately trigger Suricata alerts, which will cascade through the async backend and flash red on your Next.js dashboard.*
+
+The alerts will flow from Suricata → Backend → WebSocket → Dashboard in real time.
 
 ---
 
-## 📚 Comprehensive Documentation
+## 📚 Documentation
 
-For engineers looking to extend this system, please review our deep-dive documentation:
+| Document | Description |
+|----------|-------------|
+| [Architecture Deep Dive](docs/ARCHITECTURE.md) | Data flow, queuing, state management |
+| [API Reference](docs/API.md) | REST endpoints and WebSocket payload format |
+| [Deployment Guide](docs/DEPLOYMENT.md) | PostgreSQL migration, cloud deployment |
+| [Rule Writing Guide](docs/RULE_GUIDE.md) | Custom Suricata rule syntax and hot-reload |
+| [User Guide](docs/USER_GUIDE.md) | Dashboard walkthrough for analysts |
+| [FAQ](docs/FAQ.md) | Common questions and troubleshooting |
 
-- **[Architecture Deep Dive](docs/ARCHITECTURE.md)**: Explore the data flow, queuing systems, and state management.
-- **[API Reference](docs/API.md)**: Details on REST endpoints and WebSocket payloads.
-- **[Deployment Guide](docs/DEPLOYMENT.md)**: Instructions for moving from SQLite to PostgreSQL and deploying to AWS/DigitalOcean.
-- **[Rule Writing Guide](docs/RULE_GUIDE.md)**: How to write and load custom Suricata rules dynamically.
+---
+
+## 🧪 Running Tests
+
+```bash
+# Backend
+pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+pytest tests/backend/ -v --cov=backend
+
+# Frontend
+cd frontend && npm ci && npm test
+```
+
+CI runs automatically on every pull request via GitHub Actions (`.github/workflows/ci.yml`).
 
 ---
 
 ## 🤝 Contributing
 
-CI runs on every pull request. The blocking checks are:
-1. `ruff` — Python linting.
-2. `black --check` — Python formatting.
-3. `tsc --noEmit` — TypeScript type checking.
-4. `pytest` — backend test suite.
+Please read the [Contributing Guide](CONTRIBUTING.md) before opening a pull request.
 
-`mypy` and `eslint` also run but are currently non-blocking.
+CI blocking checks:
+1. `ruff` — Python linting
+2. `black --check` — Python formatting
+3. `tsc --noEmit` — TypeScript type checking
+4. `pytest` — Backend test suite
 
-Please read `CONTRIBUTING.md` for branch naming conventions and issue templates.
+---
 
 ## 📄 License & Contact
 
-This project is licensed under the **MIT License**.
+This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
 
 <div align="center">
   <h3>Developed & Maintained By</h3>
   <h2>Muhammad Haris</h2>
   <br />
-  
+
   <a href="https://github.com/harisx404">
     <img src="https://img.shields.io/badge/GitHub-harisx404-181717?style=for-the-badge&logo=github" alt="GitHub Profile" />
   </a>
