@@ -91,9 +91,15 @@ class Settings(BaseSettings):
     @field_validator("JWT_SECRET_KEY")
     @classmethod
     def validate_jwt_secret(cls, v: str) -> str:
-        """Ensure JWT secret is not a placeholder value."""
-        if v in ("CHANGE_ME", "changeme", "secret", ""):
-            raise ValueError("JWT_SECRET_KEY must be set to a secure random value")
+        """Ensure JWT secret is not a placeholder value and meets minimum length."""
+        placeholder_patterns = ("CHANGE_ME", "changeme", "secret", "", "CHANGE_THIS")
+        if not v or any(v.startswith(p) for p in placeholder_patterns) or v in placeholder_patterns:
+            raise ValueError(
+                "JWT_SECRET_KEY must be set to a secure random value. "
+                "Generate one with: python3 -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        if len(v) < 32:
+            raise ValueError("JWT_SECRET_KEY must be at least 32 characters long.")
         return v
 
 
