@@ -85,6 +85,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         ),
     ]
 
+    # Auto-Simulator for Cloud "Deploy and Forget" mode
+    if os.getenv("DEMO_MODE", "true").lower() == "true":
+        from backend.detection.demo_simulator import DemoSimulator
+        demo = DemoSimulator(callback=alert_manager.process_parsed_alert)
+        demo_task = asyncio.create_task(demo.start(), name="demo_simulator")
+        background_tasks.append(demo_task)
+
     log.info("nids_started")
     yield  # Application is running
 
