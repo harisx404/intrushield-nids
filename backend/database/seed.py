@@ -23,7 +23,7 @@ from sqlalchemy import func, select
 # ── Default credentials (dev/demo only) ───────────────────────────────────────
 DEFAULT_ADMIN_USERNAME = "admin"
 DEFAULT_ADMIN_EMAIL = "admin@nids.local"
-DEFAULT_ADMIN_PASSWORD = "changeme123"  # noqa: S105 — dev-only default, see README
+DEFAULT_ADMIN_PASSWORD = "admin"  # noqa: S105 — dev-only default, see README
 
 SAMPLE_ALERT_COUNT = 50
 
