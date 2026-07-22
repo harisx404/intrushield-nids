@@ -49,7 +49,7 @@ async def create_tables() -> None:
         os.makedirs("logs/errors", exist_ok=True)
         os.makedirs("logs/audit", exist_ok=True)
         os.makedirs("logs/responses", exist_ok=True)
-        
+
     async with engine.begin() as conn:
         if settings.APP_ENV != "production":
             await conn.run_sync(Base.metadata.create_all)

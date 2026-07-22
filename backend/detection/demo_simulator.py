@@ -1,10 +1,10 @@
-"""Demo Simulator — automatically generates realistic network threats."""
+"""Demo Simulator  automatically generates realistic network threats."""
 
 import asyncio
-import json
 import random
-from datetime import datetime, timezone
-from typing import Callable, Coroutine, Any
+from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -18,8 +18,8 @@ MOCK_ALERTS = [
         "alert": {
             "signature": "ET SCAN Nmap OS Detection Probe",
             "severity": 1,
-            "category": "Network Scan"
-        }
+            "category": "Network Scan",
+        },
     },
     {
         "event_type": "alert",
@@ -28,8 +28,8 @@ MOCK_ALERTS = [
         "alert": {
             "signature": "Possible SQL Injection (UNION SELECT)",
             "severity": 1,
-            "category": "Web Application Attack"
-        }
+            "category": "Web Application Attack",
+        },
     },
     {
         "event_type": "alert",
@@ -38,8 +38,8 @@ MOCK_ALERTS = [
         "alert": {
             "signature": "Possible Reverse Shell (/bin/bash outbound)",
             "severity": 2,
-            "category": "Suspicious Login"
-        }
+            "category": "Suspicious Login",
+        },
     },
     {
         "event_type": "alert",
@@ -48,8 +48,8 @@ MOCK_ALERTS = [
         "alert": {
             "signature": "Suspicious Large DNS TXT Query",
             "severity": 2,
-            "category": "Bad Unknown"
-        }
+            "category": "Bad Unknown",
+        },
     },
     {
         "event_type": "alert",
@@ -58,10 +58,11 @@ MOCK_ALERTS = [
         "alert": {
             "signature": "Log4Shell JNDI Injection Attempt",
             "severity": 1,
-            "category": "Attempted Admin"
-        }
-    }
+            "category": "Attempted Admin",
+        },
+    },
 ]
+
 
 class DemoSimulator:
     """Injects live fake traffic directly into the alert manager."""
@@ -73,14 +74,17 @@ class DemoSimulator:
     async def start(self) -> None:
         """Start the background injection loop."""
         self._running = True
-        log.info("demo_simulator_started", message="Injecting live threats every 10-20 seconds")
+        log.info(
+            "demo_simulator_started",
+            message="Injecting live threats every 10-20 seconds",
+        )
         while self._running:
             await asyncio.sleep(random.uniform(10.0, 20.0))
-            
+
             # Create a mock alert
             alert = random.choice(MOCK_ALERTS).copy()
-            alert["timestamp"] = datetime.now(timezone.utc).isoformat()
-            
+            alert["timestamp"] = datetime.now(UTC).isoformat()
+
             try:
                 await self.callback(alert)
             except Exception as e:

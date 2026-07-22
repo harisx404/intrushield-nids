@@ -72,7 +72,7 @@ class EVELogWatcher:
         """Open and tail the EVE log file until rotation or stop signal."""
         try:
             current_inode = os.stat(self._filepath).st_ino
-            async with aiofiles.open(self._filepath, mode="r", encoding="utf-8") as f:
+            async with aiofiles.open(self._filepath, encoding="utf-8") as f:
                 # On startup: seek to end so we don't replay historical events
                 await f.seek(0, 2)
                 self._last_inode = current_inode

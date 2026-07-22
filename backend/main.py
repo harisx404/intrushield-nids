@@ -48,13 +48,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Seed demo data on first run (controlled by SEED_DEMO_DATA env var).
     # Idempotent — safe to run on every restart.
     import os
+
     if os.getenv("SEED_DEMO_DATA", "true").lower() == "true":
         try:
             from backend.database.seed import seed_db
+
             await seed_db()
         except Exception as exc:  # pragma: no cover - seeding must never block startup
             log.warning("demo_seed_failed", error=str(exc))
-
 
     geoip = GeoIPEnricher(settings.GEOIP_DB_PATH)
 
@@ -73,28 +74,34 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             filepath=settings.SURICATA_LOG_PATH,
             alert_manager=alert_manager.process_parsed_alert,
         )
-        background_tasks.extend([
-            asyncio.create_task(watcher.start(), name="eve_watcher"),
-            # Persist a traffic-statistics snapshot every 60 seconds.
-            asyncio.create_task(
-                stats_service.run_aggregator_loop(interval_seconds=60),
-                name="stats_aggregator",
-            ),
-            # Expire stale IP blocks every 5 minutes.
-            asyncio.create_task(
-                blocked_ip_service.run_cleanup_loop(interval_seconds=300),
-                name="ip_block_cleanup",
-            ),
-        ])
+        background_tasks.extend(
+            [
+                asyncio.create_task(watcher.start(), name="eve_watcher"),
+                # Persist a traffic-statistics snapshot every 60 seconds.
+                asyncio.create_task(
+                    stats_service.run_aggregator_loop(interval_seconds=60),
+                    name="stats_aggregator",
+                ),
+                # Expire stale IP blocks every 5 minutes.
+                asyncio.create_task(
+                    blocked_ip_service.run_cleanup_loop(interval_seconds=300),
+                    name="ip_block_cleanup",
+                ),
+            ]
+        )
 
         # Auto-Simulator for Cloud "Deploy and Forget" mode
         if os.getenv("DEMO_MODE", "true").lower() == "true":
             from backend.detection.demo_simulator import DemoSimulator
+
             demo = DemoSimulator(callback=alert_manager.process_parsed_alert)
             demo_task = asyncio.create_task(demo.start(), name="demo_simulator")
             background_tasks.append(demo_task)
     else:
-        log.info("vercel_serverless_mode", message="Background tasks disabled for Serverless compatibility")
+        log.info(
+            "vercel_serverless_mode",
+            message="Background tasks disabled for Serverless compatibility",
+        )
 
     log.info("nids_started")
     yield  # Application is running

@@ -57,7 +57,7 @@ def require_role(*roles: str):
     """
 
     async def _check_role(
-        current_user: Annotated[UserResponse, Depends(get_current_user)]
+        current_user: Annotated[UserResponse, Depends(get_current_user)],
     ) -> UserResponse:
         if current_user.role not in roles:
             raise HTTPException(

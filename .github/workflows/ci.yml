@@ -67,10 +67,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: TypeScript check
-        run: npx tsc --noEmit
-      - name: ESLint check
-        run: npx eslint . --max-warnings 0
-        continue-on-error: true  # Non-blocking for now
+        run: ./node_modules/.bin/tsc --noEmit
+      - name: Next.js ESLint check
+        run: npx next lint
 
   test-frontend:
     name: Test TypeScript Frontend

@@ -40,6 +40,7 @@ async def health_check() -> dict:
 async def manual_seed() -> dict:
     """Manually trigger the database seeding process."""
     from backend.database.seed import seed_db
+
     try:
         await seed_db()
         return {"status": "success", "message": "Database seeded successfully"}

@@ -96,7 +96,7 @@ class Settings(BaseSettings):
         if not v or any(v.startswith(p) for p in placeholder_patterns):
             raise ValueError(
                 "JWT_SECRET_KEY must be set to a secure random value. "
-                "Generate one with: python3 -c \"import secrets; print(secrets.token_hex(32))\""
+                'Generate one with: python3 -c "import secrets; print(secrets.token_hex(32))"'
             )
         if len(v) < 32:
             raise ValueError("JWT_SECRET_KEY must be at least 32 characters long.")
