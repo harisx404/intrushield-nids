@@ -1,6 +1,6 @@
-# NIDS Custom Ruleset
-# Version: 1.0.0
-# Author: CodeAlpha Intern / Senior Security Engineer
+# NIDS Custom Suricata Rules for IntruShield NIDS
+# Author: Muhammad Haris (@harisx404) | Lead Security Engineer
+# Contact: itsharis.tech@gmail.com | LinkedIn: https://linkedin.com/in/harisx404
 # ==============================================================================
 
 # 1. SSH Brute Force Detection (Thresholding)

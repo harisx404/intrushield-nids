@@ -1,10 +1,10 @@
-# NIDS-Pro — Network Intrusion Detection System
+# IntruShield NIDS — Autonomous Network Intrusion Detection & Threat Intelligence Platform
 
 <div align="center">
 
   <img src="https://img.shields.io/badge/version-1.2.0-blue.svg" alt="Version" />
-  <a href="https://github.com/harisx404/CodeAlpha-Network-Intrusion-Detection-System/actions/workflows/ci.yml">
-    <img src="https://github.com/harisx404/CodeAlpha-Network-Intrusion-Detection-System/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <a href="https://github.com/harisx404/intrushield-nids/actions/workflows/ci.yml">
+    <img src="https://github.com/harisx404/intrushield-nids/actions/workflows/ci.yml/badge.svg" alt="CI" />
   </a>
   <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/next.js-14-black.svg" alt="Next.js 14" />
@@ -17,11 +17,11 @@
 
 <br/>
 
-A **production-grade Security Operations Center (SOC) platform** built as part of the [CodeAlpha](https://www.codealpha.tech/) Cybersecurity Internship.
+**IntruShield NIDS** is an **enterprise-grade Security Operations Center (SOC) platform and threat telemetry engine** designed and built by **[Muhammad Haris](https://github.com/harisx404)**.
 
-It orchestrates **Suricata** (deep packet inspection) with a real-time async **FastAPI** backend and a live **Next.js** dashboard — delivering instant threat visibility from raw packets to analyst screens.
+It seamlessly orchestrates **Suricata** (deep packet inspection engine) with a high-performance, real-time async **FastAPI** backend and a responsive **Next.js 14** analytics dashboard — delivering instant threat visibility from raw network wire traffic to analyst screens.
 
-> 🌐 **Live Demo:** [https://nids-pro.vercel.app](https://nids-pro.vercel.app)
+> 🌐 **Live Production Demo:** [https://nids-pro.vercel.app](https://nids-pro.vercel.app)
 
 ---
 
@@ -95,8 +95,8 @@ It orchestrates **Suricata** (deep packet inspection) with a real-time async **F
 **Prerequisites:** Docker Desktop ≥ 4.x with Compose v2, Git
 
 ```bash
-git clone https://github.com/harisx404/CodeAlpha-Network-Intrusion-Detection-System.git
-cd CodeAlpha-Network-Intrusion-Detection-System
+git clone https://github.com/harisx404/intrushield-nids.git
+cd intrushield-nids
 
 # Build and start all containers (first run seeds the database automatically)
 docker compose up --build -d
@@ -127,8 +127,8 @@ docker compose down -v                     # Full reset (removes database volume
 
 ```bash
 # 1. Clone
-git clone https://github.com/harisx404/CodeAlpha-Network-Intrusion-Detection-System.git
-cd CodeAlpha-Network-Intrusion-Detection-System
+git clone https://github.com/harisx404/intrushield-nids.git
+cd intrushield-nids
 
 # 2. Backend — create virtual environment and install dependencies
 python -m venv .venv

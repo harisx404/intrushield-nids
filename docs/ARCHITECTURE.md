@@ -1,6 +1,6 @@
-# Architecture Deep Dive: CodeAlpha NIDS
+# Architecture Deep Dive: IntruShield NIDS
 
-The CodeAlpha Network Intrusion Detection System is engineered using a strictly **Layered Domain-Driven Design (DDD)** combined with an **event-driven asynchronous pipeline**. This architecture is designed specifically to handle high-throughput network events (e.g., volumetric DDoS, SYN floods) without exhausting system resources or causing the browser UI to lock up.
+The **IntruShield Network Intrusion Detection System (IntruShield NIDS)** is engineered using a strictly **Layered Domain-Driven Design (DDD)** combined with an **event-driven asynchronous pipeline**. This architecture is designed specifically to handle high-throughput network events (e.g., volumetric DDoS, SYN floods) without exhausting system resources or causing the browser UI to lock up.
 
 ## 1. The Detection Layer (Suricata)
 

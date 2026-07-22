@@ -58,8 +58,8 @@ For full-stack local or server deployments with Suricata integration.
 ### Steps
 
 ```bash
-git clone https://github.com/harisx404/CodeAlpha-Network-Intrusion-Detection-System.git
-cd CodeAlpha-Network-Intrusion-Detection-System
+git clone https://github.com/harisx404/intrushield-nids.git
+cd intrushield-nids
 
 # Copy and edit the backend environment file
 cp backend/.env.example backend/.env

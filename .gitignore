@@ -13,6 +13,10 @@ venv/
 .ruff_cache/
 coverage/
 *.db           # SQLite dev database — never commit to version control
+nids_dev.db
+backend/nids_dev.db
+database/
+database/*
 htmlcov/
 *.egg-info/
 .coverage

@@ -57,7 +57,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-6 w-6 text-primary-fixed-dim" strokeWidth={2} />
             <span className="font-headline-sm text-[16px] font-bold text-on-surface">
-              NIDS Platform
+              IntruShield NIDS
             </span>
           </div>
           <button
