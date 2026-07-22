@@ -2,9 +2,9 @@
 
 <div align="center">
 
-  <img src="https://img.shields.io/badge/version-1.2.0-blue.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.3.0-blue.svg" alt="Version" />
   <a href="https://github.com/harisx404/intrushield-nids/actions/workflows/ci.yml">
-    <img src="https://github.com/harisx404/intrushield-nids/actions/workflows/ci.yml/badge.svg" alt="CI" />
+    <img src="https://img.shields.io/github/actions/workflow/status/harisx404/intrushield-nids/ci.yml?branch=main&label=CI" alt="CI Status" />
   </a>
   <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/next.js-14-black.svg" alt="Next.js 14" />
