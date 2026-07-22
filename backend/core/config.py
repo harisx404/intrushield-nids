@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # ── Application ──────────────────────────────────────────────────────
 
-    APP_NAME: str = "NIDS-Pro"
+    APP_NAME: str = "IntruShield NIDS"
     APP_ENV: Literal["development", "production", "testing"] = "development"
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000

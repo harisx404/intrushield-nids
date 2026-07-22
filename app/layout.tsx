@@ -6,8 +6,8 @@ import { ToastProvider } from "@/components/ui/Toast";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "NIDS Dashboard",
-  description: "Network Intrusion Detection System",
+  title: "IntruShield NIDS | Enterprise SOC & Threat Telemetry Platform",
+  description: "Autonomous real-time Network Intrusion Detection System powered by Suricata DPI and async FastAPI engine.",
 };
 
 export default function RootLayout({

@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // "standalone" output is required for Docker (self-hosted) deployments.
+  // Vercel's managed builder does not need it — the VERCEL env var is set
+  // automatically in the Vercel build environment.
+  output: process.env.VERCEL ? undefined : "standalone",
+
   reactStrictMode: true,
 
   async rewrites() {

@@ -111,8 +111,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     app = FastAPI(
-        title="NIDS-Pro API",
-        description="Network Intrusion Detection System — Professional SOC Platform",
+        title="IntruShield NIDS API",
+        description="IntruShield Network Intrusion Detection System — Autonomous Threat Telemetry & SOC Engine",
         version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc",

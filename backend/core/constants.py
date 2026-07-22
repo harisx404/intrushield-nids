@@ -1,9 +1,9 @@
 """System-wide constants."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     INFO = "INFO"
     LOW = "LOW"
     MEDIUM = "MEDIUM"
@@ -36,7 +36,7 @@ def severity_at_least(severity: str, threshold: str) -> bool:
 
 # Alert lifecycle statuses. Must stay in sync with the AlertStatus union in
 # frontend/types/alert.ts — these are the exact values the API reads and writes.
-class AlertStatus(str, Enum):
+class AlertStatus(StrEnum):
     NEW = "NEW"
     ACKNOWLEDGED = "ACKNOWLEDGED"
     RESOLVED = "RESOLVED"
@@ -44,7 +44,7 @@ class AlertStatus(str, Enum):
     ESCALATED = "ESCALATED"
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     ALERT = "alert"
     DNS = "dns"
     HTTP = "http"

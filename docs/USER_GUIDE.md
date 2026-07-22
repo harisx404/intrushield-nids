@@ -1,6 +1,6 @@
-# NIDS User Guide
+# IntruShield NIDS User Guide
 
-Welcome to the CodeAlpha Network Intrusion Detection System (NIDS) User Guide. This document provides SOC analysts and system administrators with operational instructions for using the dashboard.
+Welcome to the **IntruShield Network Intrusion Detection System (IntruShield NIDS)** User Guide. This document provides SOC analysts and system administrators with operational instructions for using the dashboard.
 
 ## 1. Accessing the Dashboard
 
