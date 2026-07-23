@@ -166,13 +166,16 @@ async def _seed_admin(session) -> None:
 
 
 async def _seed_alerts(session) -> None:
-    """Populate a fixed number of sample alerts if the table is empty."""
-    existing_count = await session.scalar(select(func.count()).select_from(Alert))
-    if existing_count:
-        print(f"Alerts table already has {existing_count} rows — skipping.")
+    """Populate sample alerts or refresh existing alert timestamps to today."""
+    existing_alerts = (await session.scalars(select(Alert).order_by(Alert.id))).all()
+    now = datetime.now(UTC)
+    if existing_alerts:
+        for i, alert in enumerate(existing_alerts):
+            alert.timestamp = now - timedelta(minutes=i * 5)
+        await session.commit()
+        print(f"✅ Refreshed timestamps for {len(existing_alerts)} existing alerts to today.")
         return
 
-    now = datetime.now(UTC)
     rng = random.Random(42)  # deterministic sample data
     alerts = []
     for i in range(SAMPLE_ALERT_COUNT):
@@ -198,6 +201,29 @@ async def _seed_alerts(session) -> None:
     session.add_all(alerts)
     await session.commit()
     print(f"✅ Created {len(alerts)} sample alerts.")
+
+
+async def _seed_stats(session) -> None:
+    """Insert or update traffic statistics snapshot for live monitoring indicators."""
+    from backend.models.statistics import TrafficStatistics
+
+    now = datetime.now(UTC).replace(microsecond=0)
+    stats = TrafficStatistics(
+        timestamp=now,
+        alerts_total=50,
+        alerts_critical=12,
+        alerts_high=28,
+        bytes_in=10485760,   # 10 MB
+        bytes_out=5242880,    # 5 MB
+        packets_in=12450,
+        packets_out=8920,
+    )
+    session.add(stats)
+    try:
+        await session.commit()
+        print("✅ Created traffic statistics snapshot for monitoring dashboard.")
+    except Exception:
+        await session.rollback()
 
 
 async def _seed_rules(session) -> None:
@@ -249,9 +275,11 @@ async def seed_db() -> None:
         await _seed_admin(session)
         await _seed_alerts(session)
         await _seed_rules(session)
+        await _seed_stats(session)
 
 
 if __name__ == "__main__":
     print("Seeding database...")
     asyncio.run(seed_db())
     print("Database seeding complete.")
+

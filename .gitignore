@@ -42,8 +42,9 @@ GeoLite2-*.mmdb
 *.swp
 .DS_Store
 
-# ── Vercel ───────────────────────────────────────────────────────────────────
+# ── Vercel / HTML Artifacts ───────────────────────────────────────────────────
 .vercel/
+*.html              # Local HTML generator artifacts
 vercel_login.html   # debugging artifact — never commit
 
 # ── Private / Local-only ─────────────────────────────────────────────────────
