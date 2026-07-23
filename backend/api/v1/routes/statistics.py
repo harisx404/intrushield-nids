@@ -15,9 +15,16 @@ router = APIRouter()
 async def read_current_statistics(
     current_user: CurrentUser, db: AsyncSession = Depends(get_db)
 ) -> dict:
-    """Retrieve the latest traffic and alert statistics."""
+    """Retrieve latest traffic & threat statistics snapshot for UI/SIEM polling.
+
+    In Production Host Mode, returns real-time network interface throughput
+    and live packet counts collected by the stats aggregator loop.
+    In Vercel Serverless Demo Mode, provides persistent baseline metrics so
+    monitoring dashboards and SIEM test queries display active data.
+    """
     stats = await statistics_service.get_current_stats(db)
     if not stats or ((stats.packets_in or 0) + (stats.packets_out or 0) == 0):
+        # Serverless / Initial Boot Fallback Snapshot for Demo & SIEM Evaluation
         resp = TrafficStatisticsResponse(
             id=1,
             timestamp=datetime.now(UTC),
