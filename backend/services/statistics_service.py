@@ -127,9 +127,7 @@ class StatisticsService:
             await session.scalar(
                 select(func.count())
                 .select_from(Alert)
-                .where(
-                    Alert.severity.in_(("CRITICAL", "HIGH"))
-                )
+                .where(Alert.severity.in_(("CRITICAL", "HIGH")))
             )
             or 0
         )
@@ -146,24 +144,24 @@ class StatisticsService:
 
         latest_stats = await statistics_repo.get_latest(session)
         packets_analyzed = 21370
-        if latest_stats and ((latest_stats.packets_in or 0) + (latest_stats.packets_out or 0)) > 0:
+        if (
+            latest_stats
+            and ((latest_stats.packets_in or 0) + (latest_stats.packets_out or 0)) > 0
+        ):
             packets_analyzed = (latest_stats.packets_in or 0) + (
                 latest_stats.packets_out or 0
             )
 
         # Severity breakdown across alerts.
         severity_rows = await session.execute(
-            select(Alert.severity, func.count())
-            .group_by(Alert.severity)
+            select(Alert.severity, func.count()).group_by(Alert.severity)
         )
         alerts_by_severity = {sev: count for sev, count in severity_rows.all()}
         for level in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"):
             alerts_by_severity.setdefault(level, 0)
 
         # Hourly trend for the last 24h, zero-filled so the chart is continuous.
-        trend_rows = await session.execute(
-            select(Alert.timestamp, Alert.id)
-        )
+        trend_rows = await session.execute(select(Alert.timestamp, Alert.id))
         buckets = {i: 0 for i in range(24)}
         for ts, _ in trend_rows.all():
             if ts.tzinfo is None:

@@ -31,8 +31,8 @@ async def read_current_statistics(
             alerts_total=50,
             alerts_critical=12,
             alerts_high=28,
-            bytes_in=10485760,   # 10.0 MB
-            bytes_out=5242880,    # 5.0 MB
+            bytes_in=10485760,  # 10.0 MB
+            bytes_out=5242880,  # 5.0 MB
             packets_in=12450,
             packets_out=8920,
         )
